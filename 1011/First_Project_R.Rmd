@@ -1,0 +1,252 @@
+---
+title: "First Project"
+author: "20180968 박서현"
+date: '2020 10 11 '
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 데이터 불러오기
+
+```{r}
+library(tidyverse)
+DF <- read_csv("C:/Users/nabib/Documents/GitHub/Statics/1011/toefl.csv")
+```
+
+```{r}
+head(DF)
+```
+
+
+## 성(Female,Male}를 새로운 변수 성별{0=남,1=여}로 변환하고 값을 지정하시오.
+
+
+변수유형 변경(factor)
+
+
+```{r}
+DF <- DF %>% mutate(gender=factor(gender))
+str(DF)
+```
+
+수준재조정
+
+
+```{r}
+DF$gender <- factor(DF$gender, levels=c('MALE', 'FEMALE'))
+
+DF$gender
+```
+
+
+factor를 수치 변수로 변환
+
+
+```{r}
+DF$gendernum <-as.numeric(DF$gender)
+
+head(DF)
+```
+
+
+값 조정
+
+
+```{r}
+DF <- mutate(DF, gendernum = ifelse(gendernum==2, 1, 0))
+
+head(DF)
+```
+
+
+## 토플성적은 (듣기+문법+독해)/3*10를 소수점 첫째자리에서 반올림한 것이다. 새 변수 성적을 생성하시오.
+
+
+```{r}
+DF <- mutate(DF, grade = round((listen + grammar + reading) / 3 * 10), 1)
+
+head(DF)
+```
+
+
+## 성적의 평균, 분산, 표준편차, 최소, 최대값을 계산하시오. 상자그림, 히스토그램, 정규확률그림을 작성하시오
+
+
+성적의 평균, 분산, 표준편차, 최소, 최대값 계산
+
+
+```{r}
+summarize(DF, n=n(), mean=mean(grade), var=var(grade), sd=sd(grade), min = min(grade), max(grade))
+```
+
+
+히스토그램
+
+
+```{r}
+ggplot(DF, aes(x=grade)) + geom_histogram()
+```
+
+
+상자 그림
+
+
+```{r}
+boxplot(DF$grade)
+```
+
+
+## 성별 성적의 평균, 분산, 표준편차, 최소, 최대값을 계산하시오. 성별 상자그림,히스토그램, 정규확률그림등을 작성하시오.
+
+
+성별 성적의 평균, 분산, 표준편차, 최소, 최대값
+
+
+```{r}
+DF %>%
+  group_by(gender) %>%
+  summarize_at(vars(grade), list(mean=mean, var=var, sd=sd, min = min, max))
+```
+
+
+성별 히스토그램
+
+
+```{r}
+ggplot(DF) +
+  geom_histogram(aes(x=grade, y=..density.., fill=gender), alpha=0.5) +
+  geom_density(aes(x=grade, fill=gender), alpha=0.5)
+```
+
+
+성별 상자그림
+
+
+```{r}
+boxplot(grade~gender, data=DF)
+```
+
+
+## 듣기, 문법, 독해, 성적들의 산점도를 그리시오.
+
+
+듣기 vs 문법
+
+
+```{r}
+plot(DF$listen, DF$grammar, type='n')
+text(DF$listen, DF$grammar, label=DF$gendernum)
+```
+
+
+읽기 vs 성적
+
+
+```{r}
+plot(DF$reading, DF$grade, type='n')
+text(DF$reading, DF$grade, label=DF$gendernum)
+```
+
+
+## 성적이 500이상이면 1=응시료와 졸업시험면제, 450이상 500미만이면 2=졸업시험면제, 400이상 450미만이면 3=지원없음, 400미만이면 4=특강수강 하기로 하였다. 변수 지원{1,2,3,4}을 작성하시오
+
+
+```{r}
+DF$support <- ifelse(DF$grade >= 500, 1,
+                     ifelse(DF$grade >= 450, 2, 
+                            ifelse(DF$grade >= 400, 3, 4)))
+
+head(DF)
+```
+
+
+## 성적이 450이상인 학생들은 졸업시험을 면제해주기로 하였다. 변수 면제 (1=성공,0=실패)를 만드시오.
+
+
+```{r}
+DF$exemption <- ifelse(DF$support <= 2, 1, 0)
+
+head(DF)
+```
+
+
+## 지원의 빈도표와 면제의 빈도표를 작성하시오. 
+
+
+지원의 빈도표
+
+
+```{r}
+sufreq <- table(DF$support)
+margin.table(sufreq)
+```
+
+
+비율로 변경
+
+
+```{r}
+prop.table(sufreq)
+```
+
+
+면제의 빈도표
+
+
+```{r}
+exfreq <- table(DF$exemption)
+margin.table(exfreq)
+```
+
+
+비율로 변경
+
+
+```{r}
+prop.table(exfreq)
+```
+
+
+## 성별\*지원, 성별\*면제의 교차표를 작성하시오.
+
+
+성별 vs 지원
+
+
+```{r}
+sutbl <- table(DF$gender, DF$support)
+sutbl <- xtabs(~gender + support, data=DF)
+sutbl
+```
+
+
+비율로 변경
+
+
+```{r}
+prop.table(sutbl)
+```
+
+
+
+성별 vs 면제
+
+
+```{r}
+extbl <- table(DF$gender, DF$exemption)
+extbl <- xtabs(~gender+exemption, data=DF)
+extbl
+```
+
+
+비율로 변경
+
+
+```{r}
+prop.table(extbl)
+```
