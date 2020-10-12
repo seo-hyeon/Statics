@@ -1,0 +1,407 @@
+---
+title: "회귀분석 3장 연습문제"
+author: "20180968 박서현"
+date: '2020 10 11 '
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(ggplot2)
+```
+
+
+# 3.5
+
+
+데이터 생성
+
+
+```{r}
+x <- c(28.5, 48.3, 40.2, 34.8, 50.1, 44.0, 27.2, 37.8, 27.2, 46.1, 31.3, 50.1, 31.3, 24.8, 42.2, 23.0, 30.1, 36.5, 40.2, 46.1)
+y <- c(35.4, 58.2, 46.1, 45.5, 64.8, 52.0, 37.9, 48.2, 41.8, 54.0, 40.8, 61.9, 36.5, 32.7, 53.8, 24.6, 31.2, 42.6, 49.6, 56.6)
+
+df <- data.frame(x, y)
+df
+```
+
+
+(a)
+
+
+```{r}
+plot(x, y)
+```
+
+
+```{r}
+ggplot(df, aes(x=x, y=y)) + geom_point(shape=21, size=6, fill="blue")
+```
+
+
+(b)
+
+
+```{r}
+cor(df)
+```
+
+
+(c)
+
+
+```{r}
+result = lm (y~x)
+summary(result)
+```
+
+
+(d)
+
+
+```{r}
+par(mfrow=c(2,2))
+plot(x,y)
+lines(x, result$fitted.values)
+plot(result, which=1)
+plot(result, which=2, pch=16)
+```
+
+
+(e)
+
+
+```{r}
+summary(result)
+```
+
+
+```{r}
+tb1=((1.17696-1)/0.08718)
+tb1
+ptb1=2*pt(tb1, 13, lower.tail = FALSE)
+ptb1
+```
+
+
+(f)
+
+
+```{r}
+confint(result)
+coef(result)
+```
+
+
+```{r}
+predict(result, newdata = data.frame(x = c(3)), interval = "confidence")
+```
+
+
+(g)
+
+
+```{r}
+summary(result)$adj.r.squared
+```
+
+
+(h)
+
+
+모든 행의 잔차
+
+
+```{r}
+result$residuals
+```
+
+
+잔차제곱합
+
+
+```{R}
+deviance(result)
+```
+
+
+(i)
+
+```{r}
+anova(result)
+```
+
+
+```{r}
+Full <- lm(y ~ 0 + as.factor(x))
+summary(Full)
+```
+
+
+(j)
+
+
+```{R}
+plot(result,2)
+```
+
+
+(k)
+
+
+```{r}
+predict(result, newdata = data.frame(x=50))
+```
+
+
+
+# 3.9
+
+
+데이터 생성
+
+
+```{r}
+Fish <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18)
+survivalTime <- c(2.51, 2.57, 2.43, 2.62, 2.74, 2.68, 2.83, 2.91, 2.98, 3.17, 3.05, 3.09, 3.32, 3.22, 3.29, 3.44, 3.52, 3.55)
+concentration <- c(5.0, 5.0, 5.0, 4.8, 4.8, 4.8, 4.6, 4.6, 4.6, 4.4, 4.4, 4.4, 4.2, 4.2, 4.2, 4.0, 4.0, 4.0)
+
+df2 <- data.frame(Fish, concentration, survivalTime)
+df2
+```
+
+
+(a)
+
+
+```{r}
+plot(concentration, survivalTime)
+```
+
+
+(b)
+
+
+```{r}
+cor(df2)
+```
+
+
+(c)
+
+
+```{r}
+result2 = lm (survivalTime~concentration)
+summary(result2)
+```
+
+
+(d)
+
+
+```{r}
+par(mfrow=c(2,2))
+plot(concentration, survivalTime)
+lines(concentration, result2$fitted.values)
+plot(result2, which=1)
+plot(result2, which=2, pch=16)
+```
+
+
+(e)
+
+
+```{r}
+summary(result2)
+```
+
+
+```{r}
+tb2=((-0.99810-1)/0.03867)
+tb2
+ptb2=2*pt(tb2, 25, lower.tail = FALSE)
+ptb2
+```
+
+
+(f)
+
+
+```{r}
+confint(result2)
+coef(result2)
+```
+
+
+```{r}
+predict(result2, newdata = data.frame(concentration = c(3)), interval = "confidence")
+```
+
+
+(g)
+
+
+```{r}
+summary(result2)$adj.r.squared
+```
+
+
+(h)
+
+
+모든 행의 잔차
+
+
+```{r}
+result2$residuals
+```
+
+
+잔차제곱합
+
+
+```{R}
+deviance(result2)
+```
+
+
+(i)
+
+```{r}
+anova(result2)
+```
+
+
+```{r}
+Full2 <- lm(survivalTime~ 0 + as.factor(concentration))
+summary(Full2)
+```
+
+
+(j)
+
+
+```{R}
+plot(result2,2)
+```
+
+
+(k)
+
+
+```{r}
+predict(result2, newdata = data.frame(concentration=5.5))
+```
+
+
+# 3.14
+
+
+데이터 생성
+
+
+```{r}
+experiment <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24)
+X <- c(1, 1, 1, 1, 2.5, 2.5, 2.5, 2.5, 4.8, 4.8, 4.8, 4.8, 5.0, 5.0, 5.0, 5.0, 6.5, 6.5, 6.5, 6.5, 7.8, 7.8, 7.8, 7.8)
+Y <- c(6, 9, 7, 10, 13, 13, 15, 16, 21, 23, 28, 30, 36, 39, 37, 35, 38, 39, 40, 42, 50, 53, 48, 55)
+
+df3 <- data.frame(experiment, X, Y)
+df3
+```
+
+
+(a)
+
+
+```{r}
+plot(X, Y)
+```
+
+
+(b)
+
+
+```{r}
+cor(df3)
+```
+
+
+(c)
+
+
+```{r}
+result3 = lm (Y~X)
+summary(result3)
+```
+
+
+(d)
+
+
+```{r}
+par(mfrow=c(2,2))
+plot(X, Y)
+lines(X, result3$fitted.values)
+plot(result3, which=1)
+plot(result3, which=2, pch=16)
+```
+
+
+(e)
+
+
+```{r}
+summary(result3)
+```
+
+
+```{r}
+tb3=((6.4099-1)/0.3614)
+tb3
+ptb3=2*pt(tb3, 25, lower.tail = FALSE)
+ptb3
+```
+
+
+(f)
+
+
+```{r}
+confint(result3)
+coef(result3)
+```
+
+
+```{r}
+predict(result3, newdata = data.frame(X = c(3)), interval = "confidence")
+```
+
+
+(g)
+
+
+```{r}
+Full3 <- lm(Y~ 0 + as.factor(X))
+summary(Full3)
+```
+
+
+(h)
+
+
+```{r}
+anova(result3, Full3)
+```
+
+```{r}
+F0=9.4788
+pf(F0, df1=2, df2=8, lower.tail=FALSE)
+```
+
+
