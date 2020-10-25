@@ -1,0 +1,354 @@
+---
+title: '일반화선형모형 중간고사'
+author: "20180968 박서현"
+date: '2020 10 21 '
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+#install.packages('DescTools')
+#install.packages("car")
+library(binom)
+library(ggplot2)
+library(PropCIs)
+library(data.table)
+library(readxl)
+library(epitools)
+library(DescTools)
+library(dplyr)
+library(MASS)
+library(car)
+library(lmtest)
+```
+
+
+# 1.
+
+
+
+```{r}
+placebo <- matrix(c(16, 48, 40, 20), byrow=T, ncol=2)
+dimnames(placebo) <- list(medicine=c("위약", "시험약"), result=c("개선됨(favor)", "개선 안됨(unfavor)"))
+placebo
+```
+
+```{r}
+barplot(placebo, density = 60, legend.text=T, col=c(2, 4), main="placebo", xlab="Result", ylab="People")
+```
+
+## 1)
+
+```{r}
+round(addmargins(prop.table(placebo, 1)), 2)
+```
+
+* 위약의 개선 비율: 0.25
+* 시험약의 개선 비율: 0.67
+
+
+```{r}
+pro_test=prop.test(placebo, correct = FALSE)
+pro_test
+```
+
+* 95% 비율차이에 대한 왈드 신뢰구간: (-0.5763, -0.2570)
+* 유의수준 0.05에서 위약과 시험약간의 개선에 유의한 차이가 있음을 알 수 있다.
+
+
+
+## 2)
+
+
+```{r}
+prop.out <- prop.table(placebo, margin=1)
+prop.out
+```
+
+
+```{r}
+prop.out[1, 1] / prop.out[2, 1]
+```
+* 위약과 시험약 개선 비율에 대한 상대위험도: 0.375
+
+
+```{r}
+rr.out <- riskratio(placebo, rev="both")
+rr.out$measure
+```
+
+* 모집단 상대위험도에 대한 95% 왈드 신뢰구간: (0.2366078, 0.5943379)
+* 위약복용집단에서 개선 비율은 시험약 복용집단에 비해 최소한 0.24배 이상 0.59배까지 더 높다는 것을 95% 확신할 수 있다.
+
+
+## 3)
+
+
+```{r}
+OddsRatio(placebo, conf.level=0.95)
+```
+
+* 오즈비: 0.16667
+* 위약으로 개선될 가능성ㅇ 시험약으로 개선될 가능성보다 낮다.
+
+
+
+## 4)
+
+
+```{r}
+oddsratio(placebo, method="wald", correction = FALSE, conf.level = 0.95)
+```
+
+* 오즈비에 대한 신뢰구간은 (0.0764, 0.3635)이다.
+* 신뢰구간에 1을 포함하고 있지 않아 개선될 오즈는 두 집단간에 서로 다르다.
+
+
+
+## 5
+
+```{r}
+pla_test = chisq.test(placebo, correct = FALSE)
+pla_test
+```
+
+```{r}
+pla_test$expected
+```
+* 각 셀의 기대도수 추정치이다.
+
+
+## 6)
+
+* 귀무가설: 호흡기질환 환자들에 대한 처리와 반응이 통계적으로 서로 독립이다.
+
+```{r}
+chisq.test(placebo)
+```
+
+
+```{r}
+G2 <- function(data){
+  X2 <- chisq.test(data)
+  mle <- X2$expected
+  df <- X2$parameter
+  term.G2 <- data*log(data/mle)
+  term.G2[data==0] <- 0
+  G2 <- 2*sum(term.G2)
+  p <- 1-pchisq(G2, df)
+  return (list(G2=G2, df=df, p.value=p))
+}
+G2(placebo)
+```
+
+* 호흡기질환 환자들에 대한 처리와 반응이 통계적으로 서로 독립이 아니다!
+
+
+
+# 2.
+
+
+```{r}
+birthdata <-  as.data.frame(read_excel("C:/Users/nabib/Documents/GitHub/Statics/1021/birthdata.xlsx"))
+birthdata
+```
+
+
+
+## 1)
+
+* 포아송회귀모형
+  - 이산반응의 결과가 도수(count)인 음이 아닌 정수의 경우의 일반화선형모형
+  - 분산이 평균보다 커서 과대산포가 발생 시에는 포아송 회귀모형을 사용할 수 없다.
+* 음이항회귀모형
+  - 음수가 아닌 정수값을 취하는 분포
+  - 모든 예측값에 대하여 산포 모수 D가 동일한 값을 갖는다고 가정함.
+  
+  
+```{r}
+mean(birthdata$children)
+var(birthdata$children)
+```
+
+* 평균이 0.6, 분산이 1.01으로 과대산포가 발생한다. 즉 포아송회귀모형보다 음이항회귀모형이 적합하다.
+
+  
+```{r}
+birth.poi <- glm(children ~ age, family = poisson(link=log), data=birthdata)
+summary(birth.poi)
+```
+* 포아송회귀모형의 적합식
+
+$$\widehat{\mu} = -4.090+0.113x       $$
+
+
+
+```{r}
+birth.nb <- glm.nb(children ~ age, data=birthdata)
+summary(birth.nb)
+```
+* 음이항회귀분석 적합식
+
+$$log \widehat{\mu} = -4.114+0.114x  $$
+
+* AIC 값이 포아송회귀모형은 289.98, 음이항회귀모형은 285.58로 음이항회귀모형의 AIC 값이 더 작다. 따라서 포아송회귀모형보다 음이항회귀모형이 더 낫다.
+
+
+## 2)
+
+```{r}
+birth.poi$fitted.values
+```
+* 포아송회귀분석에서의 예측값: 0.779
+
+
+```{r}
+birth.nb$fitted.values
+```
+* 음이항 회귀분석의 예측값: 0.781
+
+
+## 3)
+
+```{r}
+summary(birth.poi)
+```
+$$ z ={\widehat{\beta} \over SE} = {0.113 \over 0.021}  = 5.38 $$
+* 자녀 수에 대한 나이의 효과가 있음을 보여준다.
+
+
+```{r}
+confint(birth.poi)
+```
+* 신뢰구간
+
+
+## 4)
+
+```{r}
+summary(birth.nb)
+```
+* 독립이다.
+
+
+## 5)
+
+```{r}
+birthdata$nb.pred<-birth.nb$fitted.values
+birthdata$poi.pred<-birth.poi$fitted.values
+gg<- ggplot(data=birthdata, aes(x=age, y=nb.pred))
+gg + geom_point(color="red") + geom_point( aes(x=age, y=poi.pred), color="blue")
+```
+
+
+## 6)
+
+```{r}
+lrtest(birth.poi, birth.nb)
+```
+* 포아송회귀모형(-142.99)보다 음이항회귀모형식(-139.79)이 크다. 그러므로 음이항회귀모형식이 더 낫다는 것을 볼 수 있다.
+
+
+# 3.
+
+
+```{r}
+diabetes <-  as.data.frame(read_excel("C:/Users/nabib/Documents/GitHub/Statics/1021/diabetes.xlsx"))
+diabetes
+```
+
+
+## 1)
+
+```{r}
+str(diabetes)
+```
+
+
+```{r}
+diabetes <- diabetes %>% mutate(gender=factor(gender), age=factor(age))
+str(diabetes)
+```
+
+
+```{r}
+dia.poi1 <- glm(deaths ~ gender + agemidpt + popn, family = poisson, data=diabetes)
+summary(dia.poi1)
+```
+* 성별: 범주, 연령: 중앙값, 1차항
+
+
+
+```{r}
+dia.poi2 <- glm(deaths ~ gender + agemidpt + popn + agemidpt, family = poisson, data=diabetes)
+summary(dia.poi2)
+```
+* 성별: 범주, 연령: 중앙값, 2차항
+
+
+```{r}
+dia.poi3 <- glm(deaths ~ gender + age, family = poisson, data=diabetes)
+summary(dia.poi3)
+```
+* 성별: 범주, 연령: 범주
+* 3번째(성별: 범주, 연령: 범주)가 AIC값이 가장 낮다. 즉 연령을 범주형으로 사용하는 것이 더 낫다.
+
+* 연령보다 남자인지 아닌지가 당뇨병 환자의 사망자 수에 영향을 더 준다. (genderMale의 Estimate Std 값이 가장 크다.)
+
+
+## 2)
+
+```{r}
+ggplot(data=diabetes, aes(x=age, y=popn, col=gender)) + geom_point()
+```
+
+
+## 3)
+
+```{r}
+predict(dia.poi3, newdata = data.frame(gender="Male", age="55-64", popn=500000))
+```
+
+```{r}
+predict(dia.poi3, newdata = data.frame(gender="Female", age="75-84", popn=70000))
+```
+* 남성 예측값: 3.899026, 여성 예측값: 5.120971
+
+
+```{r}
+confint(dia.poi3)
+```
+* 신뢰구간
+
+
+## 4)
+
+```{r}
+diabetes$deathrate <- prop.table(diabetes$deaths)
+```
+
+
+```{r}
+dia.poi4 <- glm(deathrate ~ gender + age, family = poisson, data=diabetes)
+summary(dia.poi4)
+```
+
+* AIC값이 굉장히 커졌다.
+
+```{r}
+predict(dia.poi4, newdata = data.frame(gender="Male", age="55-64", popn=500000))
+```
+
+```{r}
+predict(dia.poi4, newdata = data.frame(gender="Female", age="75-84", popn=70000))
+```
+* 남성 예측값: -2.976206, 여성 예측값: -1.754261 
+
+
+

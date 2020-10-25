@@ -1,0 +1,257 @@
+---
+title: "Latex 수식사용 예제"
+author: "Heuiju Chun"
+date: '2020 10 20 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Problem 1.
+
+## (a)
+First, write and simplify the likelihood function for a data set of normally distributed random variables. To make this first example a lit tle simpler, suppose we have a known varianc e of u 2 = 1. Use LaTeX math typesetting notation to make your likelihood render correct ly.
+
+Normal pdf
+$$f(x: \mu, 1) = \frac{1}{\sqrt{2\pi}}e^{-\frac{(x-\mu)^2}{2}}, \,\, -\infty <x< \infty$$
+The Likelihood function of normal distribution when observations $x_1,\cdots, x_n$ are given.
+$$L(\mu:x_1,\cdots, x_n) = \prod_{i=1}^n f(x_i: \mu, 1) =(2\pi)^{-\frac{n}{2} e^{-\sum_{i=0}^{n} \frac{(x_i-\mu)^2}{2}}}         $$
+
+## (b)
+Next, consider observations from a normal distribution where u2 = 1 is a known param et er. Code up a function L_Normal , similar to the L_Poisson from class , that will take an input vector of possibl e J.LS, an input vector of observed data, and compute and output the evaluated likelihood value. Be cautious with parentheses.
+
+Likelihood function of normal distribution
+```{r normal}
+L_Normal = function(data, mu){
+   y = prod((1/sqrt(2*pi))*exp(-0.5*sum((data-mu)^2)))
+   return(y)
+ }
+
+```
+
+Poisson pdf
+
+$$f(x: \mu) = \frac{e^{-\mu} \mu^x}{x!}, \,\, x=0,1,2, \cdots $$
+Likelihood function of Poisson distribution when data $x_1,\cdots, x_n$ are given.
+$$L(\mu:x_1,\cdots, x_n) = \prod_{i=1}^n f(x_i: \mu) =\frac{e^{-nu} \mu^{-\sum_{i=0}^{n}x_i}}{\prod_{i=0}^n x_i !}        $$
+
+```{r poisson}
+L_Poisson = function(data, mu){
+  y = prod(exp(-mu)*mu^data/factorial(data))
+  return(y)
+}
+```
+
+
+## (c)
+Suppose we observe a data set of weights, in grams, of frog specimens collected in the Olentangy River
+basin: c(4.87, 3.89, 6.16, 1.79, 5.84, 4.00, 3.25, 3.68, 4.36, 4.14, 5.14, 3.61). Suppose
+frog weights can be assumed to be normally distributed with a known variance of 1 gram squared. Compute
+x, the MLE for f.L·
+
+```{r c}
+frogs <- c(4.87, 3.89, 6.16, 1.79, 5.84, 4.00, 3.25, 3.68, 4.36, 4.14, 
+            5.14, 3.61)
+xbar <- mean(frogs)
+xbar
+```
+## (d)
+Plot the likelihood function for this particular data set over the J.L domain [0, 7] . Comment on the shape of the likelihood function and the apparent location of the maximum.
+
+```{r plot_L_normal}
+mu_domain <- seq(from=0 , to=7 , by= .05)
+plot(mu_domain, sapply(mu_domain, L_Normal, data=frogs), xlab= "mu", ylab= "L(muiX,sigma)" ,
+      main= "Normal Likelihood of Frog Weights", type= "l", lwd= 2, col=2)
+abline(v=xbar, col=4, lwd=2)
+
+```
+
+The likelihood function is symmetric and the likelihood function has maximum value at the mean=4.2275 within interval of (0,7).
+
+## (e)
+Mathematically, we've proven that the sample mean x is the MLE for p,, and we can see the maximum of the likelihood function appears to be near p, = 4.2275, which we expected. Using R, compute the maximum of the likelihood function from a computer science standpoint
+
+
+```{r optim_L_normal}
+mu_domain <- seq(from=0 , to=7 , by= .05)
+optim(par=0 ,fn=function(mu){sapply(mu,L_Normal,data=frogs)}, control=list(fnscale=-1), method="Brent",
+        lower=0, upper=7)   # "fnscale=-1" indicates maximization problem
+
+```
+
+
+# Problem 2.
+
+Next on your own you'll plot the likelihood based on exponential data.
+
+## (a) 
+
+First, write and simplify the likelihood function for a data set of exponentially distributed random variables. Use LaTeX math typesetting notation to make your likelihood render correctly.
+
+
+exponential pdf
+
+$$f(x: \mu) = \frac{1}{\mu}e^{-\frac{x}{\mu}}, \,\, x \ge 0 $$
+
+
+The Likelihood function of exponential distribution when observations $x_1,\cdots, x_n$ are given.
+$$L(\mu:x_1,\cdots, x_n) = \prod_{i=1}^n f(x_i: \mu) =\mu^{-n}e^{-\frac{\sum_{i=0}^{n}x_i}{\mu}}        $$
+
+## (b)
+
+Next, consider observations from an exponential distribution where A is a known parameter. Code up a function L_Exponential , similar to the L_poisson from class and L_Normal from problem 1, that will take an input vector of possible As, an input vector of observed data, and compute and output the evaluated likelihood value. Be cautious with parentheses.
+
+
+
+```{r exponential}
+L_Exponential = function(data, mu){
+  y = prod((1/mu)*exp(-data/mu))
+  return(y)
+}
+```
+
+
+## (c)
+
+Suppose we observe a data set of heavy metal concentrations , in micrograms of mercury per liter , of water specimens collected in the Olentangy River basin: c ( 0. 20, 0. 20, 0. 14, 0. 07, 0 . 03, 0. 07, 0. 12,
+0.01, 0.54, 0.23, 0.06, 1.19, 0.50, 0.07, 0.24, 0.42). Suppose concentrations can be assumed to be exponent ially distributed. Compute x, the MLE for A.
+
+
+```{r mle_exponential}
+mercury <- c(0.20, 0.20, 0.14, 0.07, 0.03, 0.07, 0.12, 0.01, 0.54, 0.23, 0.06
+            , 1.19, 0.50, 0.07, 0.24, 0.42)
+xbar <- mean (mercury)
+print (xbar)
+```
+
+MLE of mu is 0.255625, which is mean of data.
+
+## (d)
+
+Plot the likelihood function for this particular data set over the A domain (0, 10]. Comment on the shape of the likelihood function and the apparent location of the maximum.
+
+
+
+```{r plot_L_exponential}
+mu_domain <- seq(from=0 , to=10 , by= .05)
+plot (mu_domain, sapply(mu_domain, L_Exponential, data=mercury), xlab= "mu" , ylab= "L(muiX)" ,
+      main= "Exponential Likelihood of mercury per liter" , type= "l" , lwd= 2, col=2)
+abline(v=xbar, col=4, lwd=2)
+```
+
+
+The shape of the likelihood function is not symmetric and the likelihood function has value in interval (0,10).
+The mle was obtained at the xbar=0.255625, which is the mean of data.
+
+## (e)
+
+Mathematically, we've proven that the sample mean is the MLE for A , and we can see the maximum of the likelihood function appears to be near = 3.9119804, which we expected. Using Rand optim() , compute the maximum of the likelihood function from a computer science standpoint.
+
+
+
+```{r optim_L_exponential}
+optim(par=0 ,fn=function(mu){sapply(mu,L_Exponential,data=mercury)}, control=list(fnscale=-1), method="Brent",
+      lower=0, upper=10)   # "fnscale=-1" indicates maximization problem
+L_Exponential(data=mercury, mu=xbar)
+```
+
+mle of mu is 0.255625 and the maximum of the likelihood function is 338.5596.
+
+## (f) 
+Interpret each argument of the input of optimO. Specifically, what are par , fn, control, method, lower, and upper?
+
+arguments of the input of optimO.
+par =0 which is initial value.
+fn = function(mu){sapply(mu,L_Exponential,data=mercury) which is the likelihood function.
+
+control=list(fnscale=-1), which indicates maximization problem.
+method="Brent".
+lower=0 and upper=10.
+
+## (g)
+Interpret each value of the output. Specifically, what are $par , $value , and $convergence?
+
+
+$par
+[1] 0.255625
+which means mle of mu.
+
+$value
+[1] 338.5596        
+means the maximum of the likelihood function.
+
+$convergence
+[1] 0
+means that the likelihood function was nconverged.
+
+
+# Problem 3.
+
+The Olentangy River can either remain at a safe wat er level, or crest to flood stage. This status is assumed to follow a Bernoulli distribution with parameter p , representing the probability the river is at a safe level. Over 30 days, the river's height is measured, yielding the following data : c("Safe", "Safe", "Safe", "Safe", "Safe", "Safe", "Safe", "Safe", "Safe", "Flood", "Safe", "Safe", "Safe",
+"Flood", "Safe", "Safe", "Flood", "Flood", "Safe", "Safe", "Flood", "Safe", "Safe",
+"Safe", "Safe", "Safe", "Safe", "Safe", "Flood", "Safe").
+Similarly to probl ems 2 and 3, code up and plot the likelihood function, and use optimO to obtain a
+maximum likelihood estimate for p. Comment on whether your answer seems reasonable.
+
+(sol)
+
+Bernoulli pdf (case of n=1 in binomial distribution)
+$$f(x: p) =p^x(1-p)^{(1-x)}, \,\, x=0,1$$
+
+The Likelihood function of Bernoulli distribution when observations $x_1,\cdots, x_n$ are given.
+$$L(p:x_1,\cdots, x_n) = \prod_{i=1}^n f(x_i: p) =p^{\sum_{i=0}^n x_i}(1-p)^{n-\sum_{i=0}^n x_i}         $$
+
+
+The Likelihood function of Bernoulli distribution when observations $x_1,\cdots, x_n$ are given.
+
+```{r Bernoulli}
+L_Bernoulli = function(data, p){
+  y = prod(p^x*(1-p)^(1-x))
+  return(y)
+}
+```
+
+
+
+```{r data_Bernoulli}
+height = c(1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 
+           1, 1, 1, 1, 1, 1, 1, 0, 1)
+str(height)
+xbar = mean(height)
+xbar
+
+# L_Bernoulli(data=height, p=xbar)
+```
+mean of data is 0.8 which is mle.
+
+ 
+ 
+```{r mle_Bernoulli}
+# optim(par=0 ,fn=function(p){sapply(p,L_Bernoulli,data=height)},  
+# control=list(fnscale=-1), method="Brent",
+#      lower=0, upper=1)   # "fnscale=-1" indicates maximization problem
+
+```
+After above program was porformed, the following result was obtained.
+(Rmarkdown was not complete because of Knit)
+
+$par
+[1] 0.8780671
+
+$value
+[1] 1.797545e+308
+
+$counts
+function gradient 
+      NA       NA 
+
+By optim(), the maximum of the likelihood function is 0.8780671. It is not reasonable because theoretically the maximum of the likelihood function should be mean of data, which is 0.8.
+In this Bernoulli distribution, when p is close to 0 or 1, optim() does not provide correct optimal solution.
+
+
+
+
+
+

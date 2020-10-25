@@ -1,0 +1,12 @@
+library(faraway)
+data(gala)
+ga<-lm(Species~ Area+Elevation+Nearest+Scruz+Adjacent, data=gala)
+summary(ga)
+
+library(MASS)
+op=par(mfrow=c(1,2))
+boxcox(ga, plotit=T)                                # 그림 5.12(a)
+boxcox(ga, lambda=seq(0.0, 1.0, by=0.05), plotit=T)   # 그림 5.12(b)
+par(op)
+ga2<-lm(sqrt(Species)~ Area+Elevation+Nearest+Scruz+Adjacent, data=gala)
+summary(ga2)

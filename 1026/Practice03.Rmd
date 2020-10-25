@@ -1,0 +1,99 @@
+---
+title: "Practice3"
+author: "20180968 박서현"
+date: '2020 10 26 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+#install.packages('DescTools')
+#install.packages("car")
+library(binom)
+library(ggplot2)
+library(PropCIs)
+library(data.table)
+library(readxl)
+library(epitools)
+library(DescTools)
+library(dplyr)
+library(MASS)
+library(car)
+library(lmtest)
+```
+
+
+# 6.
+
+```{r}
+y <- c(5, 18, 19, 25, 7, 7, 2)
+n <- c(6, 21, 20, 36, 17, 18, 3)
+x <- c(1, 2, 3, 4, 5, 6, 7)
+fit <- glm(y/n ~ x, family=binomial(link=logit), weights=n)
+summary(fit)
+```
+```{r}
+confint(fit)
+```
+
+
+
+## a)
+
+적합식:
+
+$$log \widehat{\mu} = 3.1870-0.5901x  $$
+
+## b)
+
+```{r}
+OddsRatio(fit, conf.level=0.95)
+```
+
+비슷하다.
+
+
+## c)
+
+```{r}
+1-pchisq((fit$coef[3])^2/(coef(summary(fit))[, "Std. Error"][3])^2,1)
+```
+
+
+## d)
+```{r}
+lrtest(fit)
+```
+
+
+## e)
+알고리즘에서 로그 가능도값이 더 이상 증가하지 않을 때까지 반복했다는 것을 알 수 있다.
+
+
+
+# 9.
+
+##a)
+$$ z ={\widehat{\beta} \over SE} = {0.710 \over 0.026} $$
+
+##b)
+-3.5179이기 때문에 33.4유로일때의 여행 신용카드를 소지할 예측확률이 0.5가 된다.
+
+##c)
+credit 자료 파일을 웹사이트에서 as.data.frame(read_excel를 이용하여 불러오고, 로지스틱 회귀모형을 적합시켜 결과를 확인하면 된다.
+
+
+
+# 16.
+* 포아송회귀모형
+  - 이산반응의 결과가 도수(count)인 음이 아닌 정수의 경우의 일반화선형모형
+  - 분산이 평균보다 커서 과대산포가 발생 시에는 포아송 회귀모형을 사용할 수 없다.
+* 음이항회귀모형
+  - 음수가 아닌 정수값을 취하는 분포
+  - 모든 예측값에 대하여 산포 모수 D가 동일한 값을 갖는다고 가정함.
+  
+여기에서 과대산포가 발생할 가능성이 있기 때문에 음이항회귀모형을 써야 한다.
