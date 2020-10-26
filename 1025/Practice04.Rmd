@@ -1,0 +1,169 @@
+---
+title: "Practice04"
+author: "20180968 박서현"
+date: '2020 10 26 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#install.packages('DescTools')
+#install.packages("car")
+library(binom)
+library(ggplot2)
+library(PropCIs)
+library(data.table)
+library(readxl)
+library(epitools)
+library(DescTools)
+library(dplyr)
+library(MASS)
+library(car)
+library(lmtest)
+```
+
+
+
+# 1.
+```{r}
+cholest <-  as.data.frame(read_excel("C:/Users/nabib/Documents/GitHub/Statics/1025/table4.4_cholesterol.xlsx"))
+cholest
+```
+
+## a)
+```{r}
+ggplot(cholest, aes(x=x1, y=y)) + geom_point(shape=21, size=6, fill="blue")
+```
+
+```{r}
+ggplot(cholest, aes(x=x2, y=y)) + geom_point(shape=21, size=6, fill="blue")
+```
+
+## b)
+```{r}
+lm1 = lm(log(y) ~ x1, data = cholest)
+```
+
+## c)
+```{r}
+lm2 = lm(log(y) ~ x2, data = cholest)
+```
+
+## d)
+```{r}
+lm3 = lm(log(y) ~ x1+x2, data = cholest)
+```
+
+## e)
+```{r}
+confint(lm3)
+```
+
+
+## f)
+```{R}
+chisq.test(cholest)
+```
+
+## g)
+```{R}
+plot(cholest,2)
+```
+
+## h)
+## i)
+```{r}
+shapiro.test(residuals(lm3))
+```
+
+## j)
+```{r}
+dwtest(lm(y~x1+x2, data=na.omit(cholest)))
+```
+
+## k)
+```{r}
+predict(lm3, newdata = data.frame(x1=84, x2=54))
+```
+
+
+
+# 3.
+```{r}
+fighter <-  as.data.frame(read_excel("C:/Users/nabib/Documents/GitHub/Statics/1025/table4.6_fighter.xlsx"))
+fighter
+```
+
+## a)
+```{r}
+fighter$LFFD = log(fighter$FFD)
+fighter
+```
+
+## b)
+```{r}
+ggplot(fighter, aes(x=FFD, y=LFFD)) + geom_point(shape=21, size=6, fill="blue")
+```
+
+## c)
+```{r}
+lm = lm(log(LFFD) ~ FFD, data = fighter)
+```
+
+## d)
+```{r}
+confint(lm)
+```
+
+## e)
+```{r}
+shapiro.test(residuals(lm))
+```
+
+
+## f)
+```{R}
+chisq.test(cholest)
+```
+
+## g)
+```{R}
+plot(fighter,2)
+```
+
+# 5.
+
+```{r}
+psycho <-  as.data.frame(read_excel("C:/Users/nabib/Documents/GitHub/Statics/1026/table4.8_psychology.xlsx"))
+psycho
+```
+
+## a)
+```{r}
+ggplot(psycho, aes(x=x1, y=y)) + geom_point(shape=21, size=6, fill="blue")
+```
+
+```{r}
+ggplot(psycho, aes(x=x2, y=y)) + geom_point(shape=21, size=6, fill="blue")
+```
+
+## b)
+```{r}
+lm = lm(log(y) ~ x1+x2, data = psycho)
+```
+
+## c)
+```{r}
+confint(lm)
+```
+
+## d)
+```{r}
+shapiro.test(residuals(lm))
+```
+
+## e)
+설명변수가 2개인 회귀모형이 결정계수가 높다.

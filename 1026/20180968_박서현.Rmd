@@ -1,13 +1,14 @@
 ---
-title: "Practice04"
+title: "회귀분석 중간고사"
 author: "20180968 박서현"
-date: '2020 10 26 '
+date: '2020 10 27 '
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
 
 ```{r}
 #install.packages('DescTools')
@@ -28,142 +29,325 @@ library(lmtest)
 
 
 # 1.
-```{r}
-cholest <-  as.data.frame(read_excel("C:/Users/nabib/Documents/GitHub/Statics/1026/table4.4_cholesterol.xlsx"))
-cholest
-```
-
-## a)
-```{r}
-ggplot(cholest, aes(x=x1, y=y)) + geom_point(shape=21, size=6, fill="blue")
-```
 
 ```{r}
-ggplot(cholest, aes(x=x2, y=y)) + geom_point(shape=21, size=6, fill="blue")
+x <- c(64, 80, 83, 87, 87, 87)
+y <- c(35, 51, 58, 58, 58, 59)
+
+df1 <- data.frame(x, y)
+df1
 ```
 
-## b)
+
+## (1)
+
 ```{r}
-lm1 = lm(log(y) ~ x1, data = cholest)
+cov(df1)
 ```
 
-## c)
+## (2)
+
 ```{r}
-lm2 = lm(log(y) ~ x2, data = cholest)
+cor.test(x=df1$x, y=df1$y)
 ```
+상관계수가 0.9857076으로 상관성이 높다
 
-## d)
+
+## (3)
+
 ```{r}
-lm3 = lm(log(y) ~ x1+x2, data = cholest)
+res = lm(y~x)
+summary(res)
 ```
+회귀식:
+$$Y = -30.66611 + 1.03073X$$
 
-## e)
+## (4)
+
 ```{r}
-confint(lm3)
+summary(res)
 ```
+결정게수: 0.9716
 
+## (5)
 
-## f)
-```{R}
-chisq.test(cholest)
-```
-
-## g)
-```{R}
-plot(cholest,2)
-```
-
-## h)
-## i)
 ```{r}
-shapiro.test(residuals(lm3))
+summary(res)
 ```
+MSE: 1.765의 제곱 = 3.115225
+회귀모형의 적합성을 나타낸다.
 
-## j)
+## (6)
+
 ```{r}
-dwtest(lm(y~x1+x2, data=na.omit(cholest)))
+coef(res)
 ```
 
-## k)
+## (7)
+
 ```{r}
-predict(lm3, newdata = data.frame(x1=84, x2=54))
+confint(res, level=0.90)
+```
+x가 0.84~1.21사이의 값이 몰려있다.
+
+
+## (8)
+
+```{r}
+summary(res)
+```
+p-value가 0.0003049로 0.05보다 작으므로 적합하다.
+7에서 구한 신뢰구간과 일치하는 것을 확인할 수 있다.
+
+## (9)
+
+```{r}
+pred = predict(res, newdata = data.frame(x=88))
+pred
+```
+
+## (10)
+
+```{r}
+pre = predict(res, newdata = data.frame(x=88))
+pre
+```
+```{r}
+confint(res, level=0.90)
 ```
 
 
+
+# 2.
+
+```{r}
+x <- c(40, 50, 60, 70, 80, 90, 40, 60, 80, 50)
+y <- c(69, 175, 272, 335, 490, 415, 72, 265, 492, 180)
+
+df <- data.frame(x, y)
+df
+```
+
+
+## (1)
+```{r}
+attach(df)
+plot(x, y)
+```
+x값이 증기함에 따라 y값도 증가한다.
+
+
+## (2)
+
+```{r}
+result = lm(y~x)
+summary(result)
+```
+회귀식:
+$$Y = -252.2971 + 8.5290X$$
+
+
+```{r}
+plot(x, y)
+abline(result)
+```
+
+## (3)
+
+```{r}
+summary(result)
+```
+t-통계량: 9.318
+p값=0.000001434 < 0.05으로 추정된 회귀계수는 유의하다.
+
+
+## (4)
+
+```{r}
+summary(result)
+```
+결정계수: 0.9156
+결정계수는 보통 상관계수를 제곱한 값이다.
+
+## (5)
+
+```{r}
+pred_y = predict(result, newdata = data.frame(x=x))
+pred_y
+```
+
+## (6)
+
+```{r}
+par(mfrow=c(2,2))
+plot(result)
+```
+```{r}
+dwtest(result)
+```
+
+
+## (7)
+
+```{r}
+par(mfrow=c(2,2))
+plot(result)
+```
+
+```{r}
+shapiro.test(residuals(result))
+```
+
+정규 Q-Q그림에서 그려진 점들이 선에서 크게 벗어나지 않으므로 정규분포를 따른다고 말할 수 있다.
+
+
+
+## (8)
+
+```{r}
+pred = predict(result, newdata = data.frame(x=mean(x)))
+pred
+```
+```{r}
+confint(result)
+```
+
+
+## (9)
+
+```{r}
+pred = predict(result, newdata = data.frame(x=c(45, 55, 65)))
+pred
+```
+```{r}
+confint(result)
+```
+
+## (10)
+
+```{r}
+summary(result)
+```
+추정계수값: 8.5290
+MSE: 48.09의 제곱 = 2312.6481
+결정계수: 0.9156
 
 # 3.
-```{r}
-fighter <-  as.data.frame(read_excel("C:/Users/nabib/Documents/GitHub/Statics/1026/table4.6_fighter.xlsx"))
-fighter
-```
-
-## a)
-```{r}
-fighter$LFFD = log(fighter$FFD)
-fighter
-```
-
-## b)
-```{r}
-ggplot(fighter, aes(x=FFD, y=LFFD)) + geom_point(shape=21, size=6, fill="blue")
-```
-
-## c)
-```{r}
-lm = lm(log(LFFD) ~ FFD, data = fighter)
-```
-
-## d)
-```{r}
-confint(lm)
-```
-
-## e)
-```{r}
-shapiro.test(residuals(lm))
-```
-
-
-## f)
-```{R}
-chisq.test(cholest)
-```
-
-## g)
-```{R}
-plot(fighter,2)
-```
-
-# 5.
 
 ```{r}
-psycho <-  as.data.frame(read_excel("C:/Users/nabib/Documents/GitHub/Statics/1026/table4.8_psychology.xlsx"))
-psycho
+sat <-  as.data.frame(read_excel("C:/Users/nabib/Documents/GitHub/Statics/1026/SAT성적.xlsx"))
+sat
 ```
 
-## a)
+## (1)
+
 ```{r}
-ggplot(psycho, aes(x=x1, y=y)) + geom_point(shape=21, size=6, fill="blue")
+plot(sat$X1, sat$Y)
 ```
 
 ```{r}
-ggplot(psycho, aes(x=x2, y=y)) + geom_point(shape=21, size=6, fill="blue")
+plot(sat$X2, sat$Y)
 ```
 
-## b)
 ```{r}
-lm = lm(log(y) ~ x1+x2, data = psycho)
+plot(sat$X3, sat$Y)
 ```
 
-## c)
+
+## (2)
+
 ```{r}
-confint(lm)
+par(mfrow=c(2,2))
+plot(sat)
 ```
 
-## d)
+## (3)
+
 ```{r}
-shapiro.test(residuals(lm))
+result3 = lm(Y ~ X1+X2+X3, data = sat)
+result3
 ```
 
-## e)
-설명변수가 2개인 회귀모형이 결정계수가 높다.
+## (4)
+
+```{r}
+summary(result3)
+```
+t값 2.917, p값: 1.965e-10 < 0.05 
+유의하다.
+
+## (5)
+
+```{r}
+summary(result3)
+```
+t값 4.869, p값: 1.965e-10 < 0.05 
+유의하다.
+
+## (6)
+
+```{r}
+summary(result3)
+```
+t값 0.554, p값: 1.965e-10 < 0.05 
+유의하다.
+
+## (7)
+
+```{r}
+par(mfrow=c(2,2))
+plot(result3)
+```
+
+## (8)
+
+```{r}
+shapiro.test(residuals(result3))
+```
+
+## (9)
+
+```{r}
+par(mfrow=c(2,2))
+plot(result3)
+```
+Q-Q plot에서 점들이 선에 몰려있기 때문에 정규분포를 따른다고 할 수 있다.
+
+```{r}
+shapiro.test(residuals(result3))
+```
+
+
+## (10)
+
+```{r}
+summary(result3)
+```
+X1, X2, X3에 곱해지는 값이 각각 0.36, 0.00, 0.03이다.
+즉 X1에 곱해지는 값이 가장 크기 때문에 y를 결정하는데 가장 영향을 준다고 할 수 있다.
+
+
+## (11)
+
+```{r}
+summary(result3)
+```
+결정계수: 0.4463
+회귀모형이 적합한지를 판단하는 지표이다. 이 회귀모형이 적합하다는 것을 보여주고 있다.
+
+
+## (12)
+
+```{r}
+confint(result3)
+```
+
+## (13)
+
+```{r}
+summary(result3)
+```
+추정계수값: 0.359
+MSE: 0.5907의 제곱 = 0.34893
+결정계수: 0.4673
+
