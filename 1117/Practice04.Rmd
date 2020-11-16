@@ -1,0 +1,150 @@
+---
+title: '일반화선형모형 4장 연습문제'
+author: "20180968 박서현"
+date: '2020 11 17 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#install.packages('DescTools')
+#install.packages("car")
+#install.packages('faraway')
+#install.packages('mdscore')
+library(binom)
+library(ggplot2)
+library(PropCIs)
+library(data.table)
+library(readxl)
+library(epitools)
+library(DescTools)
+library(dplyr)
+library(MASS)
+library(car)
+library(lmtest)
+library(faraway)
+library(mdscore)
+```
+
+
+# 5.
+
+```{r}
+Ft <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23)
+Temp <- c(66, 70, 69, 68, 67, 72, 73, 70, 57, 63, 70, 78, 67, 53, 67, 75, 70, 81, 76, 79, 75, 76, 58)
+TD <- c(0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1)
+
+df <- data.frame(Ft, Temp, TD)
+df
+```
+
+## a.
+
+``` {r}
+fit <- glm(TD ~ Temp, family=binomial(logit), data=df)
+summary(fit)
+```
+
+
+## b.
+
+```{r}
+predict(fit, type="response", newdata=data.frame(Temp=c(31)))
+```
+
+## c.
+
+```{r}
+dose.p(fit, cf=1:2, p=0.5)
+```
+
+## d.
+
+```{r}
+M0 <- glm(TD ~ 1, family=binomial(logit), data=df)
+anova(M0, fit)
+```
+
+### d.
+
+```{r}
+wald.test(fit, terms = 1)
+```
+
+```{r}
+exp(cbind(OR=coef(fit), confint.default(fit)))
+```
+
+## e.
+```{r}
+pearson.gof <- sum(fit$Temp * fit$residuals^2)
+tab <- data.frame(GoF.Statistic=c(fit$deviance, pearson.gof))
+tab$DF <- rep(fit$df.residual, 2)
+tab$P.Value <- pchisq(tab$GoF, df=tab$DF, lower.tail=FALSE)
+row.names(tab) <- c("Deviance", "Pearson")
+print(tab, digits=3)
+```
+모형이 잘 적합하지 못했다.
+
+
+# 14.
+
+```{r}
+center <- c(1, 2, 3, 4, 5, 6, 7, 8)
+NS <- c(11, 16, 14, 2, 6, 1, 1, 4)
+NF <- c(25, 4, 5, 14, 11, 10, 4, 2)
+DS <- c(10, 22, 7, 1, 0, 0, 1, 6)
+DF <- c(27, 10, 12, 16, 1, 0, 8, 1)
+
+df2 <- data.frame(center, NS, NF, DS, DF)
+df2
+```
+
+```{r}
+fit2.group <- glm(cbind(NS, NF) ~ DS + DF, family=binomial(link=logit))
+summary(fit2.group)
+```
+
+```{r}
+pearson.gof <- sum(fit2.group$Temp * fit2.group$residuals^2)
+tab <- data.frame(GoF.Statistic=c(fit2.group$deviance, pearson.gof))
+tab$DF <- rep(fit2.group$df.residual, 2)
+tab$P.Value <- pchisq(tab$GoF, df=tab$DF, lower.tail=FALSE)
+row.names(tab) <- c("Deviance", "Pearson")
+print(tab, digits=3)
+```
+
+
+# 16.
+
+```{r}
+p <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35)
+D <- c(45, 15, 40, 83, 90, 25, 35, 65, 95, 35, 75, 45, 50, 75, 30, 25, 20, 60, 70, 30, 60, 61, 65, 15, 20, 45, 15, 25, 15, 30, 40, 15, 135, 20, 40)
+T <- c(0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1)
+Y <- c(0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0 )
+
+df3 <- data.frame(p, D, T, Y)
+df3
+```
+
+```{r}
+fit3 <- glm(Y ~ D + T, family=binomial(link=logit), data=df3)
+summary(fit3)
+```
+
+```{r}
+M1 <- glm(Y ~ D + 1, family=binomial(logit), data=df3)
+M2 <- glm(Y ~ D + 0, family=binomial(logit), data=df3)
+summary(M1)
+summary(M2)
+```
+
+교포화작용항이 필요하다.
+
+
+```{r}
+anova(M1, fit3)
+```

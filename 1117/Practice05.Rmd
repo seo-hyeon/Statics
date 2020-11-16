@@ -1,0 +1,134 @@
+---
+title: '회귀분석 5장 연습문제'
+author: "20180968 박서현"
+date: '2020 11 17 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#install.packages('DescTools')
+#install.packages("car")
+#install.packages('faraway')
+library(binom)
+library(ggplot2)
+library(PropCIs)
+library(data.table)
+library(readxl)
+library(epitools)
+library(DescTools)
+library(dplyr)
+library(MASS)
+library(car)
+library(lmtest)
+library(faraway)
+```
+
+
+# 3.
+
+```{r}
+data(swiss)
+print(swiss)
+```
+
+
+```{r}
+sw <- lm(Fertility ~ Agriculture + Examination + Education + Catholic + Infant.Mortality, data=swiss)
+summary(sw)
+```
+
+```{r}
+coefficients(sw)
+confint(sw, level=0.95)
+fitted(sw)
+residuals(sw)
+anova(sw)
+vcov(sw)
+influence(sw)
+ls.diag(sw)
+
+```
+
+```{r}
+layout(matrix(c(1, 2, 3, 4), 2,2))
+plot(sw)
+```
+
+## f)
+
+위의 결과들로 볼 때 적합함을 알 수 있다.
+
+
+
+# 4.
+
+```{r}
+cholest <-  as.data.frame(read_excel("C:/Users/nabib/Documents/GitHub/Statics/1025/table4.4_cholesterol.xlsx"))
+cholest
+```
+
+
+```{r}
+ch <- lm(y ~ x1 + x2, data=cholest)
+summary(ch)
+```
+
+```{r}
+coefficients(ch)
+confint(ch, level=0.95)
+fitted(ch)
+residuals(ch)
+anova(ch)
+vcov(ch)
+influence(ch)
+ls.diag(ch)
+
+```
+
+```{r}
+layout(matrix(c(1, 2, 3, 4), 2,2))
+plot(ch)
+```
+
+## f)
+
+위의 결과들로 볼 때 적합함을 알 수 있다.
+
+# 5.
+
+```{r}
+library(faraway)
+data(sat)
+sat
+```
+
+
+```{r}
+sa <- lm(total ~ expend + ratio + salary + takers + verbal + math, data = sat)
+summary(sa)
+```
+
+```{r}
+coefficients(sa)
+confint(sa, level=0.95)
+fitted(sa)
+residuals(sa)
+anova(sa)
+vcov(sa)
+influence(sa)
+ls.diag(sa)
+
+```
+
+```{r}
+layout(matrix(c(1, 2, 3, 4), 2,2))
+plot(sa)
+```
+
+## f)
+
+위의 결과들로 볼 때 적합함을 알 수 있다.
