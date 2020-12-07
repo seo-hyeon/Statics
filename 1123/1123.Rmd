@@ -1,0 +1,120 @@
+---
+title: "독립표본문제-예제"
+author: "20180968 박서현"
+date: '2020 11 23 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Two sample T-test
+## 사전 작업
+
+```{r}
+#install.packages('tidyvere3')
+#install.packages('reticulate')
+library(tidyverse)
+library(broom)
+#library(reticulate)
+#reticulate::py_config()
+```
+
+
+## 치아 X-ray
+
+```{r}
+gender <- c('M', 'M', 'M', 'M', 'M', 'M', 'M', 'M', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F')
+Xray <- c(4.9, 5.4, 5.0, 5.5, 5.4, 6.6, 6.3, 4.3, 4.8, 5.3, 3.7, 4.1, 5.6, 4.0, 3.6, 5.0)
+```
+
+```{r}
+gender = as.factor(gender)
+```
+
+```{r}
+data <- data.frame(gender, Xray)
+data
+```
+
+
+```{r}
+boxplot(Xray ~ gender, data=data)
+```
+
+```{r}
+sumstats <- data %>% 
+  group_by (gender) %>%
+  summarize(n=n(), mean=mean(Xray), sd=sd(Xray))
+```
+
+```{r}
+sumstats
+```
+
+
+```{r}
+var.test(Xray~gender, data=data)
+```
+
+```{r}
+bartlett.test(Xray~gender, data=data)
+```
+
+```{r}
+t.test(Xray~gender, data=data, alt='less', var.equal=TRUE)
+```
+
+```{r}
+t.test(Xray~gender, data=data, alt='less', var.equal=FALSE)
+```
+
+```{r}
+wilcox.test(Xray~gender, data=data, alt='less')
+```
+
+## 수은중독
+
+```{r}
+gender = c('M', 'M', 'M', 'M', 'M', 'M', 'M', 'M', 'M', 'F', 'F', 'F', 'F', 'F', 'F')
+time = c(72, 88, 87, 74, 78, 70, 78, 93, 74, 52, 69, 73, 88, 87, 56)
+
+data2 = data.frame(gender, time)
+data2
+```
+
+
+```{r}
+sumstats <- data2 %>% 
+  group_by (gender) %>%
+  summarize(n=n(), mean=mean(time), sd=sd(time))
+```
+
+```{r}
+sumstats
+```
+
+
+```{r}
+var.test(time~gender, data=data2)
+```
+
+```{r}
+bartlett.test(time~gender, data=data2)
+```
+
+```{r}
+t.test(time~gender, data=data2, alt='less', var.equal=TRUE)
+```
+
+```{r}
+t.test(time~gender, data=data2, alt='less', var.equal=FALSE)
+```
+
+```{r}
+wilcox.test(time~gender, data=data2, alt='less')
+```
+
+
+

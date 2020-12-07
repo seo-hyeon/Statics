@@ -1,0 +1,122 @@
+---
+title: "일반화 선형모형 5,6장 연습문제"
+author: "20180968 박서현"
+date: '2020 12 8 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#install.packages('DescTools')
+#install.packages("car")
+#install.packages('faraway')
+#install.packages('mdscore')
+#install.packages('xlsx')
+#install.packages('VGAM')
+library(binom)
+library(ggplot2)
+library(PropCIs)
+library(data.table)
+library(readxl)
+library(epitools)
+library(DescTools)
+library(dplyr)
+library(MASS)
+library(car)
+library(lmtest)
+library(faraway)
+library(mdscore)
+library(xlsx)
+library(VGAM)
+```
+
+
+
+# 5.9
+
+```{r}
+Berkeley=read.xlsx("C:/Users/nabib/Documents/GitHub/Statics/1208/Berkeley.xlsx",header=TRUE, sheetName="Sheet1")
+str(Berkeley)
+```
+
+```{r}
+Berkeley$gender <- as.factor(Berkeley$gender)
+str(Berkeley)
+```
+
+```{r}
+Berkeley.table = xtabs(count~ dept + factor(admit, levels=c("1","0")) + relevel(gender, ref="male"), data=Berkeley)
+Berkeley.table
+```
+
+
+```{r}
+fit <- glm(dept~count, weights=count, data=Berkeley)
+fit
+```
+
+```{r}
+cbind(rstandard(fit, type="pearson"), residuals(fit, type="pearson"),
+residuals(fit, type="deviance"), rstandard(fit, type="deviance"))
+```
+ 
+각각의 성별의 합계에서 차이가 많이 나기 때문에 연관성의 차이가 많이 나게 된다.
+
+
+
+# 6.16
+```{r}
+Chol=read.xlsx("C:/Users/nabib/Documents/GitHub/Statics/1208/Chol.xlsx",header=TRUE, sheetName="Sheet1")
+str(Chol)
+```
+
+```{r}
+Chol$row <- as.factor(Chol$row)
+Chol$research <- as.factor(Chol$research)
+Chol$line <- as.factor(Chol$line)
+str(Chol)
+```
+
+```{r}
+Chol.table = xtabs(data ~ row + factor(line, levels=c("1", "2", "3", "4")) + relevel(research, ref="1"), data=Chol)
+Chol.table
+```
+
+```{r}
+fit <- vglm(cbind(row, research, line) ~ data, family=sratio, data=Chol)
+summary(fit)
+```
+
+
+
+
+
+
+
+# 6.19
+
+```{r}
+Acc=read.xlsx("C:/Users/nabib/Documents/GitHub/Statics/1208/Accidents.xlsx",header=TRUE, sheetName="Sheet1")
+str(Acc)
+```
+
+```{r}
+Acc$gender <- as.factor(Acc$gender)
+Acc$place <- as.factor(Acc$place)
+Acc$safe <- as.factor(Acc$place)
+Acc$row <- as.factor(Acc$row)
+str(Acc)
+```
+
+```{r}
+Acc.table = xtabs(data ~ gender + place + factor(row, levels=c("1", "2", "3", "4", "5")) + relevel(safe, ref="1"), data=Acc)
+Acc.table
+```
+
+```{r}
+fit <- vglm(cbind(gender, place, safe) ~ data, family=sratio, data=Acc)
+summary(fit)
+```

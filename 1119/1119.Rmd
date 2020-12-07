@@ -1,0 +1,36 @@
+---
+title: "일표본 과제 (R)"
+author: "20180968 박서현"
+date: '2020 11 19 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 모기 흡혈 시간
+
+* Case 3.6 A mosquito's Feast 180sec
+
+#### 가설
+- H0: 흡혈시간 <= 180
+- H1: 흡혈시간 > 180
+
+#### 기초통계량
+- n = 5
+- 표본평균: 284
+- 표준편차: 89
+
+결론: pvalue=0.06 > 유의수준 0.05이므로 모평균이 180초보다 크다.
+
+
+
+## 아마딜로 수면시간
+
+* Case 3.8 Armadillos 19hrs
+
+#### 가설
+- H0: 수면시간 <= 19
+- H1: 수면시간 > 19
+
