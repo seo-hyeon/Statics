@@ -1,0 +1,244 @@
+---
+title: '일반화 선형모형 기말고사'
+author: "20180968 박서현"
+date: '2020 12 10 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#install.packages('DescTools')
+#install.packages("car")
+#install.packages('faraway')
+#install.packages('mdscore')
+#install.packages('xlsx')
+#install.packages('VGAM')
+library(binom)
+library(ggplot2)
+library(PropCIs)
+library(data.table)
+library(readxl)
+library(epitools)
+library(DescTools)
+library(dplyr)
+library(MASS)
+library(car)
+library(lmtest)
+library(faraway)
+library(mdscore)
+library(xlsx)
+library(VGAM)
+```
+
+
+
+
+# 1. 
+
+```{r}
+smoke=read.xlsx("C:/Users/nabib/Documents/GitHub/Statics/1210/smoke.xlsx",header=TRUE, sheetName="Sheet1")
+str(smoke)
+```
+
+```{r}
+smoke$city <- as.factor(smoke$city)
+smoke$smoking <- as.factor(smoke$smoking)
+smoke$cancer <- as.factor(smoke$cancer)
+str(smoke)
+```
+
+```{r}
+smoke.table = xtabs(data ~ cancer + smoking + city, smoke)
+smoke.table
+```
+
+```{r}
+margin.table(smoke.table)
+```
+
+## A.
+
+### 1)
+
+```{r}
+BreslowDayTest(smoke.table, OR=NA, correct=FALSE)
+```
+'p-value = 0.6356 > 0.05' 이므로 공통오즈비로 해석할 수 있다.
+
+### 2)
+```{r}
+mantelhaen.test(smoke.table)
+```
+### 3)
+```{r}
+prop.table(smoke.table)
+```
+
+## B.
+### 4)
+```{r}
+fit = glm(cancer ~ smoking + city + data, data=smoke, family = binomial())
+fit
+```
+$$logit(\hat{x})= 0.033321 + 0.333757smoking + 1.602974city_B + 1.414818city_C + 0.164139city_D + 0.450138city_E + 0.115643city_F - 0.067760city_G - 0.044765city_H       $$
+
+
+### 5)
+```{r}
+fit = glm(cancer ~ city + data, data=smoke, family = binomial())
+summary(fit)
+```
+
+### 6)
+```{r}
+fit = glm(cancer ~ smoking + data, data=smoke, family = binomial())
+summary(fit)
+```
+```{r}
+ORtable=function(x,digits=2){
+    suppressMessages(a<-confint(x))
+    result=data.frame(exp(coef(x)),exp(a))
+    result=round(result,digits)
+    result=cbind(result,round(summary(x)$coefficient[,4],3))
+    colnames(result)=c("OR","2.5%","97.5%","p")
+    result
+}
+
+ORtable(fit)
+```
+
+### 7)
+```{r}
+stepAIC(fit)
+```
+
+### 8)
+```{r}
+fit = glm(cancer ~ smoking + data, data=smoke, family = binomial())
+summary(fit)
+```
+# 2.
+
+```{r}
+house=read.xlsx("C:/Users/nabib/Documents/GitHub/Statics/1210/house.xlsx",header=TRUE, sheetName="Sheet1")
+str(house)
+```
+
+```{r}
+house$gender <- as.factor(house$gender)
+house$married <- as.factor(house$married)
+str(house)
+```
+
+```{r}
+house.table = xtabs(cbind(apt, house, farm) ~ married + gender, house)
+house.table
+```
+## 1)
+```{r}
+fit2 <- vglm(cbind(apt, house, farm) ~ married, family=multinomial(refLevel = "farm"), data=house)
+summary(fit2)
+```
+
+```{r}
+fit2 <- vglm(cbind(apt, house, farm) ~ gender, family=multinomial(refLevel = "farm"), data=house)
+summary(fit2)
+```
+
+## 2)
+```{r}
+fit2.h <- vglm(cbind(apt, house) ~ gender + married, family=multinomial(refLevel = "house"), data=house)
+summary(fit2.h)
+```
+
+## 3)
+```{r}
+fit2.g <- vglm(cbind(apt, house, farm) ~ married, family=multinomial(refLevel = "farm"), data=house)
+summary(fit2.g)
+```
+
+```{r}
+lrtest(fit2, fit2.g)
+```
+
+## 4)
+```{r}
+fit2.g <- vglm(cbind(apt, house, farm) ~ married, family=multinomial(refLevel = "farm"), data=house)
+lrtest(fit2, fit2.g)
+```
+
+## 5)
+남자가 미혼일 경우에는 아파트, 기혼일 경우에는 주책이 최선의 주거형태이다.
+
+# 3.
+
+```{r}
+income=read.xlsx("C:/Users/nabib/Documents/GitHub/Statics/1210/income.xlsx",header=TRUE, sheetName="Sheet1")
+str(income)
+```
+
+```{r}
+income$gender <- as.factor(income$gender)
+income$income <- as.factor(income$income)
+str(income)
+```
+
+```{r}
+income.table = xtabs(cbind(n, o, s) ~ gender + income, income)
+income.table
+```
+
+## 1)
+```{r}
+fit3 <- vglm(cbind(n, o, s) ~ gender + income, family=multinomial(refLevel = "n"), data=income)
+fit3
+```
+
+```{r}
+y <- factor(income$income)
+fit3.p <- polr(y ~ gender, method="logistic", data=income)
+fit3.p
+```
+
+## 2)
+```{r}
+fit3.g <- vglm(cbind(n, o, s) ~ income, family=multinomial(refLevel = "n"), data=income)
+fit3.g
+```
+
+```{r}
+lrtest(fit3, fit3.g)
+```
+
+## 3)
+```{r}
+fit3 <- vglm(cbind(n, o, s) ~ gender, family=multinomial(refLevel = "n"), data=income)
+fit3
+```
+
+
+## 4)
+```{r}
+fit3 <- vglm(cbind(n, o, s) ~ gender, family=multinomial(refLevel = "n"), data=income)
+fit3
+```
+
+## 5)
+
+* 여자, 1: O
+* 여자, 2: O
+* 여자, 3: S
+* 여자, 4: O
+* 남자, 1: N
+* 남자, 2: O
+* 남자, 3: O
+* 남자, 4: S
+
+## 6)
+```{r}
+lrtest(fit3, fit3.g)
+```
+
