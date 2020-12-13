@@ -1,0 +1,121 @@
+---
+title: 'Practice 07, 08, 09'
+author: "20180968 박서현"
+date: '2020 12 14 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#install.packages('DescTools')
+#install.packages("car")
+#install.packages('faraway')
+#install.packages('mdscore')
+#install.packages('xlsx')
+#install.packages('VGAM')
+#install.packages('lattice')
+library(binom)
+library(ggplot2)
+library(PropCIs)
+library(data.table)
+library(readxl)
+library(epitools)
+library(DescTools)
+library(dplyr)
+library(MASS)
+library(car)
+library(lmtest)
+library(faraway)
+library(mdscore)
+library(xlsx)
+library(VGAM)
+library(lattice)
+```
+
+
+# 7.1
+
+```{r}
+talented=read.xlsx("C:/Users/nabib/Documents/GitHub/Statics/1214/talented.xlsx",header=TRUE, sheetName="Sheet1")
+talented
+```
+
+```{r}
+attach(talented)
+summary(talented)
+```
+
+```{r}
+splom(~talented, pch=8)
+```
+
+```{r}
+r.full = lm(talented$score ~ talented$fatheriq + talented$motheriq + talented$speak + talented$count + talented$read + talented$edutv + talented$cartoons)
+summary(r.full)
+anova(r.full)
+```
+
+```{r}
+op = par(mfrow=c(2, 2))
+plot(r.full)
+par(op)
+```
+
+```{r}
+attributes(r.full)
+summary(resid(r.full))
+```
+
+# 8.1
+```{r}
+bean=read.xlsx("C:/Users/nabib/Documents/GitHub/Statics/1214/bean.xlsx",header=TRUE, sheetName="Sheet1")
+bean
+```
+
+
+```{r}
+result = lm(bean$y ~ bean$x)
+summary(result)
+```
+
+```{r}
+par(mfrow=c(2,2))
+plot(result)
+```
+
+```{r}
+l <- lm(bean$y ~ bean$x, weights=bean$sd)
+summary(l)
+```
+
+```{r}
+par(mfrow=c(2,2))
+plot(l)
+```
+
+
+# 9.4
+
+```{r}
+turkey=read.xlsx("C:/Users/nabib/Documents/GitHub/Statics/1214/turkey.xlsx",header=TRUE, sheetName="Sheet1")
+turkey
+```
+
+```{r}
+turkey$Origin <- as.factor(turkey$Origin)
+turkey$Origin <- as.numeric(turkey$Origin)
+str(turkey)
+```
+
+```{r}
+result <- lm(turkey$Origin ~ turkey$x + turkey$z1 + turkey$z2)
+summary(result)
+```
+
+```{r}
+par(mfrow=c(2,2))
+plot(result)
+```
