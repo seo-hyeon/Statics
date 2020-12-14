@@ -1,0 +1,363 @@
+---
+title: '회귀분석 기말고사'
+author: "20180968 박서현"
+date: '2020 12 15 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(binom)
+library(ggplot2)
+library(PropCIs)
+library(data.table)
+library(readxl)
+library(epitools)
+library(DescTools)
+library(dplyr)
+library(MASS)
+library(car)
+library(lmtest)
+library(faraway)
+library(mdscore)
+library(xlsx)
+library(VGAM)
+library(lattice)
+library(tseries)
+```
+
+
+
+# 1.
+
+```{r}
+cigarette=read.table("C:/Users/nabib/Documents/GitHub/Statics/1215/data/Cigarette_Consumption.txt",header=TRUE)
+cigarette
+```
+
+```{r}
+str(cigarette)
+```
+
+
+## (1)
+
+* 귀무가설: Female 변수는 유의한 설명변수가 아니다.
+* 대립가설: Female 변수는 유의한 설명변수이다.
+
+```{r}
+fit = lm(Sales ~ Age + HS + Income + Black + Female + Price, data = cigarette)
+summary(fit)
+```
+
+```{r}
+fit_female = lm(Sales ~ Age + HS + Income + Black + Price, data = cigarette)
+summary(fit_female)
+```
+
+```{r}
+anova(fit, fit_female)
+```
+
+p-value가 0.05보다 크다 -> 귀무가설 기각 못 한다.  
+즉 female 변수는 유의미한 설명변수가 아니다.
+
+
+## (2)
+
+* 귀무가설: Female 변수와 HS는 유의한 설명변수가 아니다. (동시에 사용했을 때)
+* 대립가설: Female 변수와 HS는 유의한 설명변수이다.(동시에 사용했을 때)
+
+```{r}
+fit = lm(Sales ~ Age + HS + Income + Black + Female + Price, data = cigarette)
+summary(fit)
+```
+
+```{r}
+fit_fh = lm(Sales ~ Age + Income + Black + Price, data = cigarette)
+summary(fit_fh)
+```
+
+```{r}
+anova(fit, fit_fh)
+```
+
+p-value가 0.05보다 크다 -> 귀무가설 기각 못 한다.  
+즉 female 변수와 HS는 유의미한 설명변수가 아니다. (동시에 사용)
+
+
+## (3)
+
+```{r}
+fit_i <- lm(Sales ~ Income, data=cigarette)
+summary(fit_i)
+```
+
+```{r}
+coefficients(fit_i)
+```
+
+```{r}
+confint(fit_i, level=0.95)
+```
+
+## (4)
+
+```{r}
+fit = lm(Sales ~ Age + HS + Income + Black + Female + Price, data = cigarette)
+summary(fit)
+```
+
+```{r}
+fit_income = lm(Sales ~ Age + Black + Female + Price, data = cigarette)
+summary(fit_income)
+```
+
+```{r}
+anova(fit, fit_income)
+```
+
+income을 포함시켰을 때의 p-value는 0.006857이고, income을 포함하지 않았을 경우의 p-value는 0.01689이다.
+
+즉 income의 설명 비율은 0.010033이라는 것을 알 수 있다.
+
+
+## (5)
+
+```{r}
+fit_income2 = lm(Sales ~ Income, data = cigarette)
+summary(fit_income2)
+```
+
+```{r}
+anova(fit, fit_income2)
+```
+
+4번 결과와 같지 않다.
+anova 결과가 같지 않기 때문이다.
+
+## (6)
+
+```{r}
+fit_6 = lm(Sales ~ Price + Age + Income, data=cigarette)
+summary(fit_6)
+```
+
+```{r}
+anova(fit, fit_6)
+```
+
+pvalue가 0.05보다 크기 때문에 Price + Age + Income 은 유의미한 조합이 아니라는 것을 알 수 있다.
+
+## (7)
+
+```{r}
+op = par(mfrow=c(2, 2))
+plot(fit)
+par(op)
+```
+
+```{r}
+plot(cooks.distance(fit))
+```
+
+```{r}
+outlierTest(fit)
+```
+
+모여있는 점과 달리 간간이 위에 튀어나온 데이터들이 보인다.
+
+이 데이터가 이상치이다.
+
+
+## (8)
+
+```{r}
+vif(fit)
+```
+
+VIF가 모두 충분히 크지 않는 것을 볼 수 있다.
+
+
+## (9)
+
+```{r}
+step <- stepAIC(fit, direction="both")
+```
+
+```{r}
+step$anova
+```
+
+HS, Female, Black 순으로 중요하지 않다는 점을 알 수 있다.
+
+
+## (10)
+```{r}
+fit_test <- lm(Sales ~ Age + Income + Price, data=cigarette)
+summary(fit_test)
+```
+
+```{r}
+anova(fit, fit_test)
+```
+
+9번에서 추천받은 변수 3개(HS, Female, Black)를 제거했을 경우가 가장 결과가 잘 나왔다.
+
+# 2.
+
+```{r}
+two=read.table("C:/Users/nabib/Documents/GitHub/Statics/1215/data/기말문제2번데이터.txt",header=TRUE)
+two
+```
+
+
+## (1)
+
+```{r}
+plot(two)
+```
+
+```{r}
+result <- lm(Y ~ X1 + X2 + X3 + X4 + X5 + X6, data=two)
+summary(result)
+```
+
+```{r}
+vif(result)
+```
+VIF 값이 지나치게 높은 것을 확인할 수 있다.
+
+회귀모형의 가정 중 하나인 독립성을 위배하고 있으니, 다중공선성을 제거해주어야 한다.
+
+## (2)
+
+```{r}
+par(mfrow=c(1, 2))
+plot(two$Y, rstandard(result), ylim=c(-2, 2.5),  pch="*", main="standadized residual")
+plot(two$Y, rstudent(result), ylim=c(-2, 2.5),  pch="*", main="studentized residual")
+```
+
+```{r}
+qqPlot(result)
+```
+
+## (3)
+
+```{r}
+cutoff <- 6/((nrow(two$Y) - length(result$coefficients) -2))
+plot(fit, which=4, cook.levels=cutoff)
+```
+
+```{r}
+outlierTest(result)
+```
+
+9, 29, 30 데이터가 이상치인 것을 알 수 있다.
+
+## (4)
+
+```{r}
+vif(result)
+```
+
+VIF 값이 지나치게 높은 것을 확인할 수 있다.
+
+다중공선성이 발생할 수 있다.
+
+## (5)
+
+```{r}
+step <- stepAIC(result, direction="both")
+```
+
+```{r}
+step$anova
+```
+X6, X5 순으로 유의성이 적은 것을 알 수 있다.
+
+
+## (6)
+
+```{r}
+result_test <- lm(Y ~ X1 + X2 + X3 + X4, data=two)
+summary(result_test)
+```
+
+```{r}
+anova(result, result_test)
+```
+
+
+# 3.
+
+```{r}
+salary=read.table("C:/Users/nabib/Documents/GitHub/Statics/1215/data/Salary_survey.txt",header=TRUE)
+salary
+```
+
+
+## (1)
+
+```{r}
+fit3_1 <- lm(S ~ E + X, data=salary)
+summary(fit3_1)
+```
+
+```{r}
+fit3_2 <- lm(S ~ M + X, data=salary)
+summary(fit3_2)
+```
+
+## (2)
+
+* 귀무가설: E는 유의하지 않다.
+* 대립가설: E는 유의하다.
+
+```{r}
+fit3 <- lm(S ~ E + M + X, data=salary)
+summary(fit3)
+```
+
+```{r}
+fit3_E <- lm(S ~  M + X, data=salary)
+summary(fit3_E)
+```
+
+```{r}
+anova(fit3, fit3_E)
+```
+
+p-value가 0.05보다 작다. -> 귀무가설 기각 못 한다.  
+즉 E 변수는 유의미한 설명변수가 아니다.
+
+
+## (3)
+
+```{r}
+l <- lm(S ~ E + X, data=salary)
+summary(l)
+```
+
+```{r}
+grid <- seq(1,5, by=0.5)
+seed1 <- l$coefficients[[1]] + l$coefficients[[2]] + l$coefficients[[3]]*grid
+seed0 <- l$coefficients[[1]] + l$coefficients[[3]]*grid
+```
+
+
+```{r}
+with(plot(S ~ X, pch=E, lwd=2, col=c(2, 4)), data = salary)
+legend(2.7, 11, c("E=1", "E=2"), pch=c(2, 0))
+lines(grid, seed1, lty=1)
+lines(grid, seed0, lty=2)
+```
+## (4)
+```{r}
+vif(fit3)
+```
+
