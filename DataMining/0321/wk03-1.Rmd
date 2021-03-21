@@ -1,0 +1,289 @@
+---
+title: "WK02 Data Exploration"
+output: html_document
+---
+
+# 1 데이터 탐색
+
+## 1.1 참고 사이트:
+* RStudio Cheat Sheets (https://rstudio.com/resources/cheatsheets/): 최신 치트시트
+* Data Visualization Cheat Sheet (https://github.com/rstudio/cheatsheets/raw/master/data-visualization-2.1.pdf)
+* Data Transformation Cheat Sheet (https://github.com/rstudio/cheatsheets/raw/master/data-transformation.pdf)
+* ggplot2 사이트 (https://docs.ggplot2.org/current/)
+
+## 1.2 htwtbd 자료설명
+* htwtbd00.csv: 2021년 온라인으로 수집한 연예인 신체계측자료
+  * n = 84. 여자 42명(배우 40, 가수 1, 개그맨 1), 남자 42명(배우 40, 가수 1, 개그맨 1)
+  
+|변수|설명|
+|:---|:---|
+|name|이름|
+|gnd|성별{F, M}. 이진 판별분석시 타겟|
+|byr|출생년도|
+|ht|키(cm). 회귀분석시 타겟|
+|wt|몸무게(kg)|
+|bd|혈액형{A,AB,B,O}|
+|a|분야{actor, singer, comedian}|
+
+* Model Lookup (https://topepo.github.io/caret/available-models.html)
+* install.packages("caret", dependencies=c("Depends", "Suggests"))
+
+## 1.3 패키지
+
+```{r}
+library(tidyverse)
+library(gridExtra) # ggplot 객체를 한 페이지에 표시. grid.arrange(..., nrow, ncol)
+```
+
+```{r}
+library(scales) # 시각화 축조정 scale_x_xxx
+```
+
+```{r}
+library(skimr)  # 기초통계량 + 결측정보
+library(naniar) # 결측 정보
+```
+
+```{r}
+library(corrplot)
+```
+
+## 1.4 읽기
+
+```{r}
+# as.data.frame으로 안바꾸면 caret vs tidyverse 호환문제 때문에 경고 발생
+# as.data.frame해도 문자변수를 factor화 하지 않음
+DF <- as.data.frame(read_csv('D:/Github/Statics/DataMining/0321/htwtbd00.csv'))
+```
+
+```{r}
+head(DF)
+```
+
+```{r}
+dim(DF)
+```
+
+```{r}
+str(DF) # (Old) sapply(DF, class)
+```
+
+## 1.5 전처리
+* age: 나이계산
+* 이산형 변수처리
+  * 문자변수(gnd, bd)를 factor화
+  * {0,1}로 코딩된 가변수는 그대로 숫자형으로 사용. factor화해도 되지만 해석시 유의
+
+```{r}
+# factor로 다 바꿀 것. lm, rpart, rf은 안해도 무방, gbm에서 오류남
+
+DF <- mutate(DF,
+             age = 2021-byr,
+             gnd = factor(gnd),
+             bd = factor(bd),
+             a = factor(a))
+sapply(DF, class)
+```
+
+## 1.6 기초통계량/결측파악
+* skimr::skim(data):summary()와 결측정보. group_by와 연결. pandas::describe()와 유사
+* naniar::vis_miss(data): 변수별 결측비율 시각화
+  * 주의: 출력물의 Missing(%)과 Present(%)는 완전 결측값 비율이 아니고, 전체 셀 중 결측의 비율임
+  * sum(complete.cases(DF)): 완전 관측값 개수 반환
+  * 원자료가 너무 크면 랜덤 추출(sample_n)해서 파악할 것
+  * DF %>% dplyr::sample_frac(size=0.1) %>% vis_miss()
+* naniar::miss_var_summary(data):: 변수별 결측비율 요약
+
+```{r}
+skim(DF)
+```
+
+```{r}
+# 변수별 결측비율, Missing=결측셀/전체셀, Present=비결측셀/전체셀
+naniar::vis_miss(DF)
+```
+
+```{r}
+naniar::miss_var_summary(DF)
+```
+
+```{r}
+# 완전 관측값 비율 = 15%
+# 회귀분석계통 분석방법을 그대로 적용하면 전체 자료의 15%만 사용하게 됨
+sum(complete.cases(DF))/nrow(DF)*100  # prop_complete_case(DF)
+```
+
+## 1.7 탐색
+### 1.7.1 단변량 탐색
+
+* 연속형 변수의 탐색
+  * 수치요약: 평균, 표준편차
+  * 시각화: 히스토그램, density(커널분포추정), 상자그림, rug
+  
+```{r}
+summary(DF)
+```
+
+```{r}
+# summarize_if(.tbl, .predicate:logical, .funs:list, ...)
+# summarize_at(, tbl, .vars_vector, .fybs:list, ...)
+summarize_if(DF, is.numeric, list(mn=mean, sd=sd), na.rm=TRUE)
+```
+
+```{r}
+summarize_at(DF, c('ht', 'wt'), list(mn=mean, sd=sd), na.rm=TRUE)
+```
+
+```{r}
+DF%>% dplyr::select_if(is.numeric) %>% skim()
+```
+
+```{r}
+g1 <- ggplot(DF, aes(x=ht)) + geom_density() + geom_rug()
+g2 <- ggplot(DF, aes(x=ht)) + geom_histogram(color='black', fill='white')
+g3 <- ggplot(DF, aes(x=ht)) + geom_histogram(aes(y=..density..), color='black', fill='white') + geom_density(alpha=0.2, fill='#FF6666') + geom_rug()
+g4 <- ggplot(DF, aes(x=ht)) + geom_boxplot()
+grid.arrange(g1, g2, g3, g4, nrow=2, ncol=2)
+```
+
+* 이산형 변수의 탐색
+  * 수치요약: 빈도, 상대빈도
+  * 시각화: 막대그래프(barplot)
+  
+```{r}
+DF %>% dplyr::select_if(is.factor) %>% skim()
+```
+
+```{r}
+table(DF$gnd)
+```
+
+```{r}
+xtabs(~bd, data=DF)
+```
+
+```{r}
+xtabs(~a, data=DF)
+```
+
+```{r}
+g1 <- ggplot(DF, aes(x=gnd)) + geom_bar()
+g2 <- ggplot(DF, aes(x=gnd)) + geom_bar(aes(y=..count../sum(..count..))) + scale_y_continuous(labels=percent)
+g3 <- ggplot(DF, aes(x=bd)) + geom_bar()
+g4 <- ggplot(DF, aes(x=bd)) + geom_bar(aes(y=..count../sum(..count..))) + scale_y_continuous(labels=percent)
+grid.arrange(g1, g2, g3, g4, nrow=2, ncol=2)
+```
+
+### 1.7.2 이변량 탐색
+* 연속 ~ 이산
+
+```{r}
+DF %>% group_by(gnd) %>% dplyr::select_if(is.numeric) %>% skim()
+```
+
+```{r}
+DF %>%
+  group_by(gnd) %>%
+  summarize_at(c('ht', 'wt'), list(mn=mean, sd=sd), na.rm=TRUE)
+```
+
+```{r}
+DF %>%
+  group_by(gnd) %>%
+  summarize_if(is.numeric, list(mn = mean, sd=sd), na.rm=TRUE)
+```
+
+```{r}
+g1 <- ggplot(DF, aes(x=ht, col=gnd, fill=gnd)) + geom_density(alpha=0.5)
+g2 <- ggplot(DF, aes(x=ht, col=gnd, fill=gnd)) + geom_histogram(alpha=0.5)
+g3 <- ggplot(DF, aes(x=ht)) + geom_histogram() + facet_grid(gnd~.)
+g4 <- ggplot(DF, aes(x=gnd, y=ht)) + geom_boxplot() + coord_flip()
+grid.arrange(g1, g2, g3, g4, nrow=2, ncol=2)
+```
+
+```{r}
+t.test(ht~gnd, data=DF, var.equal=TRUE)
+```
+
+```{r}
+summary(aov(ht~bd, data=DF))
+```
+
+* 연속 ~ 연속
+
+```{r}
+# cor(DF[,sapply(DF, is.numeric)], use='pairwise.complete.obs')
+R <- cor(DF%>% select_if(is.numeric), use='pairwise.complete.obs')
+R
+```
+
+```{r}
+sort(R['ht',], decreasing=TRUE)
+```
+
+```{r}
+g1 <- ggplot(DF, aes(x=ftln, y=ht)) + geom_point(alpha=0.5)
+g2 <- ggplot(DF, aes(x=ftln, y=ht, color=gnd, shape=gnd)) + geom_point(alpha=0.5)
+g3 <- ggplot(DF, aes(x=bd, y=ht, color=gnd, shape=gnd)) + geom_point(alpha=0.5)
+g4 <- ggplot(DF, aes(x=bd, y=ht, color=gnd, shape=gnd)) + geom_jitter(alpha=0.5)
+grid.arrange(g1, g2, g3, g4, nrow=2, ncol=2)
+````
+
+```{r}
+corrplot::corrplot.mixed(R, upper='ellipse', order='FPC')
+```
+
+```{r}
+library(GGally) # ggcorr, ggparis
+```
+
+```{r}
+ggcorr(DF %>% select_if(is.numeric), geom = 'tile', label=TRUE)
+```
+
+```{r}
+ggpairs(DF, 
+        columns=c('ht', 'ftln', 'wt'),
+        lower=list(continuous=wrap('points', alpha=0.05, col='blue')),
+        diag=list(continuous='barDiag'))  # diag=list(continous='densityDiag')
+```
+
+```{r}
+ggplot(DF, aes(x=wt, y=ht)) + geom_density2d() + geom_point(aes(col=gnd, shape=gnd))
+```
+
+
+* 이산 ~ 이산
+
+```{r}
+g1 <- ggplot(DF, aes(x=bd, fill=gnd)) + geom_bar()
+g2 <- ggplot(DF, aes(x=bd, fill=gnd)) + geom_bar(aes(y=..count../sum(..count..)))
+
+# Or
+tb <- table(DF$gnd, DF$bd)
+tb <- xtabs(~bd+gnd, data=DF)
+df <- data.frame(tb)
+df
+```
+
+```{r}
+g3 <- ggplot(df, aes(x=gnd, y=Freq)) + geom_bar(aes(fill=bd), stat='identity')
+
+tb <- prop.table(xtabs(~gnd+bd, data=DF), 1)
+tb
+```
+
+```{r}
+df <- data.frame(tb)
+df
+```
+
+```{r}
+g4 <- ggplot(df, aes(x=gnd, y=Freq)) + geom_bar(aes(fill=bd), stat='identity')
+
+grid.arrange(g1, g2, g3, g4, nrow=2, ncol=2)
+```
+
+```{r}
+chisq.test(xtabs(~gnd+bd, data=DF), correct=FALSE)
+```
