@@ -1,0 +1,249 @@
+---
+title: "W04-02-REG-df2015na Homework"
+output: html_document
+---
+
+# 문제 정답
+
+|모형|키예측식|
+|:---|:---|
+|Mlm|y = 104.86782 + 5.31866gndM - 0.06027age + 0.39190wt -0.38732wa + 2.12427hdwd + 1.57590ftln - 1.08832ftwd + 0.55505bldAB - 0.31038bldB -0.13907bldO + 0.18510lftY - 0.32792smkY - 0.43018alcY |
+|Mstep| y = 105.41125 + 5.27676gndM -0.06226age + 0.39174wt - 0.38821wa + 2.19044hdln + 1.49213ftln - 1.03522ftwd|
+
+
+|모형| RSQ | MSE | MAE | AIC|
+|:-- |:--|:--|:--|:--|
+|Mlm|30.8802| 25.30651| 3.66709|645.15|
+|Mstep|0.879| 21.66815| 3.601111|633.84|
+
+|모형|gnd|age|ht|wt|wa|hdln|hdwd|ftln|ftwd|bld|lft|smk|alc|yhlm|reslm|yhstep|resstep
+|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|
+|본인|F|23|154|51.4|68|16|9|20|9|AB|0|0|0|153.7971|0.202867|153.2895 | 0.7105283|
+|A|M|53|169|67|86|18|10.5|25|10|B|0|0|1|166.2341 | 2.765890|166.6282  |2.3718285|
+|B|M|20|174|75|80|19|11|26|11|B|0|0|1|176.3076| -2.307604|176.7933 |-2.7933482|
+|C|F|52|155|60|72|17.5|9|25|9.5|AB|0|0|0|164.3920 |-9.392002|163.5287 |-8.5287394|
+
+
+
+
+
+# 패키지
+
+```{r}
+suppressWarnings(suppressMessages(library(tidyverse)))
+suppressWarnings(suppressMessages(library(skimr)))
+suppressWarnings(suppressMessages(library(naniar)))
+suppressWarnings(suppressMessages(library(gridExtra)))
+suppressWarnings(suppressMessages(library(scales)))
+suppressWarnings(suppressMessages(library(dplyr)))
+suppressWarnings(suppressMessages(library(caret)))
+suppressWarnings(suppressMessages(library(MASS)))
+```
+
+
+
+
+# 읽기
+
+```{r}
+DF <- as.data.frame(read_csv('D:/Github/Statics/DataMining/0404/df2015na.csv'))
+SC <- as.data.frame(read_csv('D:/Github/Statics/DataMining/0404/df2015na-sc.csv'))
+```
+
+```{r}
+head(DF)
+```
+
+
+
+
+
+# 변수 조정
+
+
+```{r}
+sapply(DF, class)
+```
+
+```{r}
+sapply(SC, class)
+```
+
+```{r}
+DF <-mutate(DF,
+            gnd = factor(gnd),
+            bld = factor(bld),
+            lft = factor(lft, labels = c('N', 'Y')),
+            smk = factor(smk, labels = c('N', 'Y')),
+            alc = factor(alc, labels = c('N', 'Y')))
+
+str(DF)
+```
+```{r}
+head(SC)
+```
+
+```{r}
+SC <-mutate(SC,
+            gnd = factor(gnd),
+            bld = factor(bld),
+            lft = factor(lft, labels = c('N')),
+            smk = factor(smk, labels = c('N')),
+            alc = factor(alc, labels = c('N', 'Y')))
+levels(SC$lft)<-append(levels(SC$lft), 'Y')
+levels(SC$smk)<-append(levels(SC$smk), 'Y')
+levels(SC$bld)<-append(levels(SC$bld), c('A','O'))
+str(SC)
+```
+
+
+
+
+# 결측
+```{r}
+skimr::skim(DF)
+```
+
+```{r}
+naniar::miss_var_summary(DF)
+```
+
+```{r}
+skimr::skim(SC)
+```
+
+```{r}
+naniar::miss_var_summary(SC)
+```
+
+```{r}
+DF_nomiss <- na.omit(DF)
+head(DF_nomiss)
+```
+
+
+
+# 간단 탐색
+
+```{r}
+plot(DF_nomiss)
+```
+
+
+* 연속 ~ 연속
+
+```{r}
+R <- cor (DF_nomiss%>% select_if(is.numeric), use='pairwise.complete.obs')
+R
+```
+
+
+```{r}
+sort(R['ht', ], decreasing=TRUE)
+```
+
+```{r}
+corrplot::corrplot.mixed(R, upper='ellipse', order='FPC')
+```
+
+* 이산 ~ 이산
+  * 성별 흡연비율을 시각화
+  * 성별 음주비율을 시각화
+  * 성별 왼솝잡이비율을 시각화
+  
+```{r}
+g1 <- ggplot(DF_nomiss, aes(x=smk, fill=gnd)) + geom_bar()
+g2 <- ggplot(DF_nomiss, aes(x=alc, fill=gnd)) + geom_bar()
+g3 <- ggplot(DF_nomiss, aes(x=lft, fill=gnd)) + geom_bar()
+
+grid.arrange(g1, g2, g3, nrow=2, ncol=2)
+```
+
+
+
+# 회귀분석
+
+### 선형회귀분석
+
+```{r}
+Mlm <- lm(ht~., data=DF_nomiss)
+summary(Mlm)
+```
+
+##### Mlm 식:
+y = 104.86782 + 5.31866gndM - 0.06027age + 0.39190wt -0.38732wa + 2.12427hdwd + 1.57590ftln - 1.08832ftwd + 0.55505bldAB - 0.31038bldB -0.13907bldO + 0.18510lftY - 0.32792smkY - 0.43018alcY
+
+
+
+```{r}
+par(mfrow=c(2,2))
+plot(Mlm)
+```
+
+```{r}
+predict(Mlm,SC)
+```
+
+```{r}
+y = SC$ht
+pred=predict(Mlm, SC)
+resid = y-pred
+cbind(y, pred, resid)
+```
+
+```{r}
+MSE = sum(resid^2)/4
+MAE = sum(abs(resid))/4
+
+cat("MSE: ",  MSE, "   MAE: ", MAE)
+```
+
+##### RSQ, MSE, MAE
+Rsq: 30.8802, MSE: 25.30651, MAE: 3.667091
+
+
+
+### 변수선택 회귀분석
+
+```{r}
+Mstep <- stepAIC(Mlm)
+```
+
+```{r}
+summary(Mstep)
+```
+
+##### Mstep 식:
+
+y = 105.41125 + 5.27676gndM -0.06226age + 0.39174wt - 0.38821wa + 2.19044hdln + 1.49213ftln - 1.03522ftwd
+
+
+
+
+
+```{r}
+par(mfrow=c(2,2))
+plot(Mstep)
+```
+
+```{r}
+predict(Mstep, SC)
+```
+
+
+```{r}
+y = SC$ht
+pred=predict(Mstep, SC)
+resid = y-pred
+cbind(y, pred, resid)
+```
+
+```{r}
+MSE = sum(resid^2)/4
+MAE = sum(abs(resid))/4
+
+cat("MSE: ",  MSE, "   MAE: ", MAE)
+```
+
+##### RSQ, MSE, MAE
+Rsq: 0.879, MSE: 21.66815, MAE: 3.601111
