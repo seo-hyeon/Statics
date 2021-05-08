@@ -1,0 +1,651 @@
+---
+title: "w04-2"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# wk04-2-REG-df2015na
+* 실행시간 측정
+
+```{r}
+time1 <- Sys.time()
+time1
+```
+
+# 회귀모형
+
+## 자료 설명
+* Size Korea 2015년 인체계측자료 일부: n=300 (nc=268), d=13
+
+
+## 패키지
+
+```{r}
+suppressWarnings(suppressMessages(library(tidyverse)))
+library(tidymodels)
+```
+
+```{r}
+library(caret)
+```
+
+```{r}
+library(skimr)
+library(naniar)
+```
+
+```{r}
+library(gridExtra)
+```
+
+```{r}
+library(scales)
+```
+
+```{r}
+DF <- as.data.frame(read_csv('D:/Github/Statics/DataMining/0509/df2015na.csv'))
+```
+
+```{r}
+dim(DF)
+```
+
+```{r}
+str(DF)
+```
+
+```{r}
+head(DF)
+```
+
+
+## 변수 조정
+* 문자변수 (gnd, bld)를 factor화
+* {0,1}로 코딩된 이산형 변수를 숫자로 처리하거나 factor해서 사용가능
+
+```{r}
+DF <- mutate(DF,
+             gnd=factor(gnd), bld=factor(bld),
+             lft=factor(lft, labels=c('N','Y')),
+             smk=factor(smk, labels=c('N', 'Y')),
+             alc=factor(alc, labels=c('N', 'Y')))
+str(DF)
+```
+
+## 결측
+* skimr::skim(data, ...): summary()에 결측정보를 추가. group_by와 연결
+* 결측 현황: skim이나 naniar로 확인
+
+```{r}
+DF %>% skim()
+```
+
+```{r}
+# 완전한 관측값 비율
+sum(complete.cases(DF))/nrow(DF)*100
+```
+
+```{r}
+# 변수별 결측비율
+naniar::vis_miss(DF)
+```
+
+```{r}
+naniar::miss_var_summary(DF)
+```
+
+## 간단 탐색
+* caret::featurePlot(x:연속형, y:요인, plot='strip,scatter,box,density')
+
+```{r}
+featurePlot(x=select_if(DF, is.numeric), y=DF$gnd,
+           plot='box',
+           scales=list(x=list(relation='free'), y=list(relation='free')))
+```
+
+```{r}
+featurePlot(x=select_if(DF, is.numeric), y=DF$bld,
+            plot='box',
+            scales=list(x=list(relation='free'), y=list(relation='free')))
+```
+
+```{r}
+featurePlot(x=select_if(DF, is.numeric), y=DF$lft,
+            plot='box',
+            scales=list(x=list(relation='free'), y=list(relation='free')))
+```
+
+```{r}
+featurePlot(x=select_if(DF, is.numeric), y=DF$smk,
+            plot='box',
+            scales=list(x=list(relation='free'), y=list(relation='free')))
+```
+
+```{r}
+featurePlot(x=select_if(DF, is.numeric), y=DF$alc,
+            plot='box',
+            scales=list(x=list(relation='free'), y=list(relation='free')))
+```
+
+
+## 분할/예측값 저장소 준비
+* TR:TS를 0.75:0.25로 분할
+
+```{r}
+set.seed(20180968)
+
+# rsplit 객체: strata에 NA가 있으면 안 됨
+Ris <- initial_split(DF, prop=0.75)
+TR <- training(Ris)
+TS <- testing(Ris)
+
+#예측값을 저장할 장소
+TROUT <- TR %>% dplyr::select(ht)
+TSOUT <- TS %>% dplyr::select(ht)
+```
+
+## 전처리
+* recipe 객체 생성
+  * 연속형 변수는 medianimpute
+  * 이산형 변수(이진 가변수 포함)는 modeimpute
+  * 이산형 변수(이진 가변수 제외)는 dummy화
+
+```{r}
+RC <-
+  recipe(ht~., data=TR) %>%
+  step_medianimpute(all_numeric(), -all_outcomes()) %>%  #age, wt, wa, hdln, hdwd, ftln, ftwd
+  step_modeimpute(all_nominal(), -all_outcomes()) %>%    #gnd, bld, lft, smk, alc
+  step_dummy(all_nominal(), -all_outcomes())
+
+RC
+```
+
+## 튜링계획 지정
+
+```{r}
+trCntl <- trainControl(method='cv', number=10)
+```
+
+## lm: 선형회귀모형
+* 튜닝모수 없음. intercept는 튜닝 안함
+
+```{r}
+modelLookup('lm')
+```
+
+* 적합
+```{r}
+set.seed(20180968)
+Mlm <- train(RC, data=TR,
+             method='lm',
+             trControl = trCntl)
+             # metric='RMSE.Rsquared' 회귀 모형 선택 기준
+
+Mlm
+```
+
+```{r}
+Mlm$results
+```
+
+```{r}
+# (X) plot(Mlm)
+summary(Mlm)
+```
+
+```{r}
+plot(varImp(Mlm))
+```
+
+```{r}
+Mlm$bestTune
+```
+
+```{r}
+Mlm$finalModel #lm객체(TR을 재적합한 모형)
+```
+
+```{r}
+Mlm$resample
+```
+
+```{r}
+TROUT <- TR %>% dplyr::select(ht)
+TSOUT <- TS %>% dplyr::select(ht)
+TROUT <- TROUT %>% bind_cols(yhlm=predict(Mlm, newdata=TR))
+TSOUT <- TSOUT %>% bind_cols(yhlm=predict(Mlm, newdata=TS))
+head(TSOUT)
+```
+
+```{r}
+#For REG, yardstick::mae, rmse, rsq
+foo <- function(y, yh) {
+  c(rmse=rmse_vec(y, yh), mae=mae_vec(y, yh), rsq=rsq_vec(y, yh))
+}
+foo(TSOUT$ht, TSOUT$yhlm)
+```
+
+```{r}
+METlm <-
+  bind_cols(
+    bind_rows(foo(TROUT$ht, TROUT$yhlm), foo(TSOUT$ht, TSOUT$yhlm)),
+    data.frame(model='lm', TRTS=c('TR', 'TS')))
+METlm
+```
+
+```{r}
+g1 <- xyplot(ht~yhlm, data=TROUT,
+             type=c('p','g'), xlim=c(140, 200), ylim=c(140,200),
+             main='(TR) y ~ yhlm')
+g2 <- xyplot(ht-yhlm~yhlm, data=TROUT,
+             type=c('p','g'), 
+             ylim='residual',
+             main='(TR) reslm ~ yhlm')
+g3 <- xyplot(ht~yhlm, data=TSOUT,
+             type=c('p','g'), xlim=c(140, 200), ylim=c(140,200),
+             main='(TS) y ~ yhlm')
+g4 <- xyplot(ht-yhlm~yhlm, data=TSOUT,
+             type=c('p','g'), 
+             ylim='residual',
+             main='(TS) reslm ~ yhlm')
+grid.arrange(g1, g2, g3, g4, ncol=2)
+```
+
+```{r}
+# 자유도로 확인가능
+refitCntrl <- trainControl(method='none')
+Flm <- train(RC, data=TR,
+             method='lm',
+             trControl=trainControl(method='none'),
+             tuneGrid=Mlm$bestTune)
+Flm
+```
+
+## ImStepAIC: AIC 변수선택
+* 튜닝모수 없음. intercept는 튜닝 안함
+* parsnip에 없음
+
+```{r}
+modelLookup('lmStepAIC')
+```
+
+* 적합
+
+```{r}
+set.seed(20180968)
+Mstep <- train(RC, data=TR,
+               method='lmStepAIC',
+               trControl=trCntl)
+```
+
+```{r}
+#metric='RMSE.Rsquared' 회귀 모형 선택 기준
+
+Mstep
+```
+
+```{r}
+Mstep$results
+```
+
+```{r}
+# (X) plot(Mstep)
+summary(Mstep)
+```
+
+```{r}
+ggplot(varImp(Mstep))
+```
+
+```{r}
+Mstep$bestTune
+```
+
+```{r}
+Mstep$finalModel #lm 객체(TR을 재적합한 모형)
+```
+
+```{r}
+Mstep$resample
+```
+
+```{r}
+TROUT <- TROUT %>% mutate(yhstep=predict(Mstep, newdata=TR))
+TSOUT <- TSOUT %>% mutate(yhstep=predict(Mstep, newdata=TS))
+head(TSOUT)
+```
+
+```{r}
+g1 <- ggplot(TROUT, aes(x=yhstep, y=ht)) + geom_point()
+g2 <- ggplot(TROUT, aes(x=yhstep, y=ht-yhstep)) + geom_point()
+g3 <- ggplot(TSOUT, aes(x=yhstep, y=ht)) + geom_point()
+g4 <- ggplot(TSOUT, aes(x=yhstep, y=ht-yhstep)) + geom_point()
+grid.arrange(g1, g2, g3, g4, ncol=2)
+```
+
+```{r}
+# For REG, yardstick::mae, rmse, rsq
+METstep <-
+  bind_cols(
+    bind_rows(foo(TROUT$ht, TROUT$yhstep), foo(TSOUT$ht, TSOUT$yhstep)),
+    data.frame(model='lmStepAIC', TRTS=c('TR', 'TS')))
+METstep
+```
+
+## glmnet, elasticnet, lasso, ridge
+* enet은 분류분석에 사용 못함. glmnet 사용해야 함
+* glmnet: nlambda=100개를 사전 탐색한 후 lambda를 정함
+
+
+```{r}
+modelLookup('enet')
+```
+
+```{r}
+modelLookup('glmnet')
+```
+
+* 적합
+
+```{r}
+set.seed(20180968)
+glmnetGrid <- expand.grid(alpha=seq(0.1, by=0.24), lambda=seq(0.0, 0.1, by=0.01))
+Mglmnet <- train(RC, data=TR,
+                 method='glmnet',
+                 trControl=trCntl,
+                 tuneGrid = glmnetGrid)
+```
+
+```{r}
+Mglmnet
+```
+
+```{r}
+Mglmnet$results # 튜닝결과
+```
+
+```{r}
+ggplot(Mglmnet)
+```
+
+```{r}
+# (X) summary(Mglmnet)
+ggplot(varImp(Mglmnet))
+```
+
+```{r}
+Mglmnet$bestTune # alpha=1이므로 lasso가 됨됨
+```
+
+```{r}
+# (X) Mglmnet$finalModel # glmnet 객체
+
+# lasso plot: x: L1 Norm vs Ceofficients
+plot(Mglmnet$finalModel)
+```
+
+```{r}
+# lasso plot: x: log(lamnda) vs Coefficients
+plot(Mglmnet$finalModel, xvar='lambda', label=TRUE)
+abline(v=log(Mglmnet$bestTune$lambda), lty=2)
+```
+
+```{r}
+coef(Mglmnet$final, s=Mglmnet$bestTune$lambda)
+```
+
+```{r}
+Mglmnet$resample # CV 폴더별 평가측도. densityplot(Mglmnet)
+```
+
+```{r}
+TROUT <- TROUT %>% mutate(yhglmnet=predict(Mglmnet, newdata=TR))
+TSOUT <- TSOUT %>% mutate(yhglmnet=predict(Mglmnet, newdata=TS))
+head(TSOUT)
+```
+
+```{r}
+g1 <- ggplot(TROUT, aes(x=yhglmnet, y=ht)) + geom_point()
+g2 <- ggplot(TROUT, aes(x=yhglmnet, y=ht-yhglmnet)) + geom_point()
+g3 <- ggplot(TSOUT, aes(x=yhglmnet, y=ht)) + geom_point()
+g4 <- ggplot(TSOUT, aes(x=yhglmnet, y=ht-yhglmnet)) + geom_point()
+grid.arrange(g1, g2, g3, g4, ncol=2)
+```
+
+```{r}
+# For REG, yardstick::mae, rmse, rsq
+METglmnet <-
+  bind_cols(
+    bind_rows(foo(TROUT$ht, TROUT$yhglmnet), foo(TSOUT$ht, TSOUT$yhglmnet)),
+    data.frame(model='glmnet', TRTS=c('TR', 'TS')))
+METglmnet
+```
+
+## rpart
+* rpart(회귀나무)
+
+```{r}
+modelLookup('rpart') # 튜닝모수 cp:Complexity parameter
+```
+
+```{r}
+modelLookup('rpart2') # 튜닝모수 maxdepth
+```
+
+* 적합
+
+```{r}
+set.seed(20180968)
+rpartGrid <- expand.grid(cp=seq(0,0.2,length=10))
+
+Mrpart <- train(RC, data=TR,
+                 method='rpart',  #Regression Tree
+                 trControl=trCntl,
+                 tuneGrid = rpartGrid)  #tuneLength=5, metric='RMSE,Rsquared'
+```
+
+```{r}
+Mrpart
+```
+
+```{r}
+Mrpart$results # 튜닝 결과
+```
+
+```{r}
+ggplot(Mrpart) #M$results 시각화 size(#Hidden Units) vs RMSE
+```
+
+```{r}
+# (long) summary(Mrpart)
+ggplot(varImp(Mrpart))
+```
+
+```{r}
+Mrpart$bestTune #alpha=1이므로 lasso가 됨
+```
+
+```{r}
+Mrpart$finalModel #nnet 객체
+```
+
+```{r}
+plot(Mrpart$finalModel)
+text(Mrpart$finalModel)
+```
+
+```{r}
+library(partykit)
+```
+
+```{r}
+plot(as.party(Mrpart$finalModel))
+```
+
+```{r}
+library(rpart.plot)
+rpart.plot::rpart.plot(Mrpart$finalModel)
+```
+
+```{r}
+Mrpart$resample # CV 폴더별 평가측도 densityplot(Mnbet)
+```
+
+
+```{r}
+TROUT <- TROUT %>% mutate(yhrpart=predict(Mrpart, newdata=TR))
+TSOUT <- TSOUT %>% mutate(yhrpart=predict(Mrpart, newdata=TS))
+head(TSOUT)
+```
+
+```{r}
+g1 <- ggplot(TROUT, aes(x=yhrpart, y=ht)) + geom_point()
+g2 <- ggplot(TROUT, aes(x=yhrpart, y=ht-yhrpart)) + geom_point()
+g3 <- ggplot(TSOUT, aes(x=yhrpart, y=ht)) + geom_point()
+g4 <- ggplot(TSOUT, aes(x=yhrpart, y=ht-yhrpart)) + geom_point()
+grid.arrange(g1, g2, g3, g4, ncol=2)
+```
+
+```{r}
+# For REG, yardstick::mae, rmse, rsq
+METrpart <-
+  bind_cols(
+    bind_rows(foo(TROUT$ht, TROUT$yhrpart), foo(TSOUT$ht, TSOUT$yhrpart)),
+    data.frame(model='rpart', TRTS=c('TR', 'TS')))
+METrpart
+```
+
+## ranger
+* ranger:fast random forest
+
+```{r}
+modelLookup('ranger') # 튜닝모수 mrtry, splitrule, min.nide.size
+```
+
+* 적합
+
+```{r}
+set.seed(20180968)
+rangerGrid <- expand.grid(
+  mtry=seq(2, ncol(TR) -1, by=2), #mtry=seq(10, ncol(trn)-1, by=2) 조정
+  min.node.size=1:3,
+  splitrule = c('extratrees') # splitrule='gini, extratrees'. gini는 REG 적용 불가
+)
+
+Mranger <- train(RC, data=TR,
+                 method='ranger', importance='impurity',
+                 trControl=trCntl,
+                 tuneGrid = rangerGrid)
+```
+
+```{r}
+#tuneLength=5
+#metric='RMSE.Rsquared' 회귀 모형선택기준
+Mranger # 튜닝결과 (M$result)
+```
+
+```{r}
+Mranger$results # 튜닝 결과
+```
+
+```{r}
+ggplot(Mranger) #M$results 시각화 size(#Hidden Units) vs RMSE
+```
+
+```{r}
+# (X) summary(Mranger)
+ggplot(varImp(Mranger)) # train(importance='impurity') 지정해야 함
+```
+
+```{r}
+Mranger$bestTune #alpha=1이므로 lasso가 됨
+```
+
+```{r}
+Mranger$finalModel #nnet 객체
+```
+
+
+```{r}
+Mranger$resample # CV 폴더별 평가측도 densityplot(Mnnet)
+```
+
+
+```{r}
+TROUT <- TROUT %>% mutate(yhranger=predict(Mranger, newdata=TR))
+TSOUT <- TSOUT %>% mutate(yhranger=predict(Mranger, newdata=TS))
+head(TSOUT)
+```
+
+```{r}
+g1 <- ggplot(TROUT, aes(x=yhranger, y=ht)) + geom_point()
+g2 <- ggplot(TROUT, aes(x=yhranger, y=ht-yhranger)) + geom_point()
+g3 <- ggplot(TSOUT, aes(x=yhranger, y=ht)) + geom_point()
+g4 <- ggplot(TSOUT, aes(x=yhranger, y=ht-yhranger)) + geom_point()
+grid.arrange(g1, g2, g3, g4, ncol=2)
+```
+
+```{r}
+# For REG, yardstick::mae, rmse, rsq
+METranger <-
+  bind_cols(
+    bind_rows(foo(TROUT$ht, TROUT$yhranger), foo(TSOUT$ht, TSOUT$yhranger)),
+    data.frame(model='ranger', TRTS=c('TR', 'TS')))
+METranger
+```
+
+## 평가
+### CV 평가
+
+```{r}
+RESAMP <- resamples(list(LM=Mlm,
+                         STEP=Mstep,
+                         GLMNET=Mglmnet,
+                         RPART=Mrpart,
+                         RANGER=Mranger))
+summary(RESAMP)
+```
+
+```{r}
+bwplot(RESAMP)
+```
+
+### TS 평가
+
+```{r}
+MET <- bind_rows(METlm, METstep, METglmnet, METrpart, METranger)
+arrange(MET, TRTS, rmse)
+```
+
+```{r}
+arrange(MET, TRTS, mae)
+```
+
+```{r}
+arrange(MET, TRTS, desc(rsq))
+```
+
+```{r}
+g1 <- ggplot(MET, aes(x=model, y=rsq, shape=TRTS, col=TRTS, group=TRTS)) + 
+  geom_line() + 
+  geom_point(size=3)
+g2 <- ggplot(MET, aes(x=model, y=rmse, shape=TRTS, col=TRTS, group=TRTS)) + 
+  geom_line() +
+  geom_point(size=3)
+
+grid.arrange(g1, g2, nrow=2, ncol=1)
+```
+
+## 실행시간
+
+```{r}
+time2 <- Sys.time()
+time2
+```
+
+```{r}
+time2 - time1
+```
